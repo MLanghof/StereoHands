@@ -108,17 +108,30 @@ void loadAlbedo(String path, double offset, double scale)
   {
     // TODO: Color scales based on file name
     //color c = color((int)(255 * (db.get() + offset) / scale));
-    color c = getColor((float)db.get());
+    color c = getColor(path, (float)db.get());
     img.pixels[i] = c;
   }
   img.updatePixels();
 }
 
-color getColor(float value) {
-  colorMode(HSB, 1.0f);
-  color c = color(value / 2, 1.0f, abs(value));
-  colorMode(RGB, 255);
-  return c;
+// Produces a color scale appropriate for the file opened
+color getColor(String path, float value)
+{
+  // Default (a.mat)
+  color ret = color((int)(255 * value));
+  
+  // Vectors
+  
+  if (path.endsWith("px.mat") ||
+      path.endsWith("py.mat")) {
+    colorMode(HSB, 1.0f);
+    ret = color(value, 1.0f, (abs(value)));
+    colorMode(RGB, 255);
+  }
+  if (path.endsWith("pz.mat")) {
+    ret = color(255 * (1.0 - value));
+  }
+  return ret;
 }
 
 void mouseWheel(MouseEvent event)
