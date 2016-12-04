@@ -7,34 +7,25 @@ float[][] kernel = {{ v, v, v },
                     
 PImage img;
 
-SelectorBar subjectSelector, lightSelector, trialSelector, dataSelector;
-
-File root = new File("D:/PSHands/");
-File[] subjectFolders = root.listFiles(); 
-File[] lightFolders, trialFolders, dataFiles;
-File currentFile;
+FileSelectorBar fileSelection = new FileSelectorBar(new File("D:/PSHands/"), 0);
 
 
 void setup() {
   size(2048, 2048);
   noLoop();
   
-  subjectSelector = new SelectorBar(subjectFolders.length, 0);
-  lightSelector = new SelectorBar(0, subjectSelector.HEIGHT);
-  trialSelector = new SelectorBar(0, lightSelector.Y + lightSelector.HEIGHT);
-  subjectSelector.max = subjectFolders.length;
-  
-  openSubject();
+  openFile();
 } 
 
 void draw() {
   if (img == null) return;
   image(img, 0, 0); // Displays the image from point (0,0) 
   
-  subjectSelector.draw();
-  lightSelector.draw();
-  trialSelector.draw();
-  
+  fileSelection.draw();
+}
+
+void convolute()
+{
   img.loadPixels();
 
   // Create an opaque image of the same size as the original
@@ -65,57 +56,31 @@ void draw() {
 
 void mouseClicked()
 {
-  if (subjectSelector.handleClick(mouseX, mouseY)) {
-    openSubject();
-  }
-  if (lightSelector.handleClick(mouseX, mouseY)) {
-    openLight();
-  }
-  if (trialSelector.handleClick(mouseX, mouseY)) {
-    opentrial();
-  }
+  fileSelection.handleClick(mouseX, mouseY);
+  openFile();
 }
 
-void openSubject()
+void openFile()
 {
-  File subjectFolder = subjectFolders[subjectSelector.selected];
-  lightFolders = subjectFolder.listFiles();
-  lightSelector.max = lightFolders.length;
-  
-  openLight();
-}
-
-void openLight()
-{
-  File lightFolder = lightFolders[lightSelector.selected];
-  trialFolders = lightFolder.listFiles();
-  trialSelector.max = trialFolders.length;
-  
-  opentrial();
-}
-
-void opentrial()
-{
-  File trialFolder = trialFolders[trialSelector.selected];
-  
-  // TODO: async
-  if (lightSelector.selected == 0) {
-    loadAlbedo(trialFolder.getPath() + "/a.mat", 0.0, 1.1);
+  String path = fileSelection.getFile().getPath();
+  if (path.endsWith(".mat")) {
+    loadAlbedo(path);
   } else {
-    img = loadImage(trialFolder.getPath() + "/si.bmp");
-    //loadAlbedo(trialFolder.getPath() + "/px.mat", 1.0, 2.0);
+    img = loadImage(path);
   }
   redraw();
 }
-
-// byte[] matData;
 
 DoubleBuffer getMatDoubles(String path)
 {
   byte[] matData = loadBytes(path);
   return ByteBuffer.wrap(matData, 420 * 8, 2048 * 2048 * 8).order(ByteOrder.LITTLE_ENDIAN).asDoubleBuffer();
 }
-  
+
+void loadAlbedo(String path)
+{
+  loadAlbedo(path, 0.0, 1.0);
+}
   
 void loadAlbedo(String path, double offset, double scale)
 {
@@ -125,36 +90,16 @@ void loadAlbedo(String path, double offset, double scale)
   img.loadPixels();
   for (int i = 0; i < sq(2048); i++)
   {
-    color c = color((int)(255 * (db.get() + offset) / scale));
+    //color c = color((int)(255 * (db.get() + offset) / scale));
+    color c = getColor((float)db.get());
     img.pixels[i] = c;
   }
   img.updatePixels();
 }
 
-
-/*
-    long a = 0;
-    a |= 0x00000000000000FFL & ((long)(data[i]));
-    a |= 0x000000000000FF00L & ((long)(data[i+1]) << 8);
-    a |= 0x0000000000FF0000L & ((long)(data[i+2]) << 16);
-    a |= 0x00000000FF000000L & ((long)(data[i+3]) << 24);
-    a |= 0x000000FF00000000L & ((long)(data[i+4]) << 32);
-    a |= 0x0000FF0000000000L & ((long)(data[i+5]) << 40);
-    a |= 0x00FF000000000000L & ((long)(data[i+6]) << 48);
-    a |= 0xFF00000000000000L & ((long)(data[i+7]) << 56);
-    color c = color((int)(255 * Double.longBitsToDouble(a)));
-    img.pixels[(i - start) / 8] = c;
-    /*long b = 0;
-    b |= 0xFF00000000000000L & ((long)(data[i]) << 56);
-    b |= 0x00FF000000000000L & ((long)(data[i+1]) << 48);
-    b |= 0x0000FF0000000000L & ((long)(data[i+2]) << 40);
-    b |= 0x000000FF00000000L & ((long)(data[i+3]) << 32);
-    b |= 0x00000000FF000000L & ((long)(data[i+4]) << 24);
-    b |= 0x0000000000FF0000L & ((long)(data[i+5]) << 16);
-    b |= 0x000000000000FF00L & ((long)(data[i+6]) << 8);
-    b |= 0x00000000000000FFL & ((long)(data[i+7]));*/
-    
-    /*print("a: " + a + " --- " + Long.toBinaryString(a) + " --- ");
-    println(Double.longBitsToDouble(a));*/
-    /*print("b: " + b + " --- " + Long.toBinaryString(b) + " --- ");
-    println(Double.longBitsToDouble(b));*/
+color getColor(float value) {
+  colorMode(HSB, 1.0f);
+  color c = color(value / 2, 1.0f, abs(value));
+  colorMode(RGB, 255);
+  return c;
+}

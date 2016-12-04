@@ -1,37 +1,99 @@
-
-class SelectorBar {
+class FileSelectorBar {
   
-  public int max = 0;
+  File root;
+  public File[] files;
+  
+  FileSelectorBar child;
   
   public int selected = 0;
   
-  public SelectorBar(int max, int Y)
+  public FileSelectorBar(File root, int Y)
   {
-    this.max = max;
+    this.root = root;
     this.Y = Y;
+    
+    update();
   }
   
-  public void draw() {
-    float interval = width / max;
-    stroke(255);
-    fill(120, 255);
-    
-    for (int i = 0; i <= max; i++)
-    {
-      float x = i * interval;
-      line(x, Y, x, Y + HEIGHT);
-      if (i == selected) {
-        rect(x, Y, interval, HEIGHT);
+  void update()
+  {
+    files = root.listFiles();
+    selected = min(selected, files.length);
+    if (mustDescend()) {
+      if (child == null) {
+        child = new FileSelectorBar(getSelected(), Y + HEIGHT);
+      } else {
+        child.setRoot(getSelected());
       }
     }
   }
   
-  public boolean handleClick(int x, int y)
+  public File getFile()
   {
-    if (y < Y) return false;
-    if (y > Y + HEIGHT) return false;
-    selected = max * x / width; 
-    return true;
+    if (mustDescend())
+    {
+      return child.getFile();
+    }
+    return getSelected();
+  }
+  
+  public boolean mustDescend() {
+    return getSelected().isDirectory();
+  }
+  
+  public int getMax()
+  {
+    return files.length;
+  }
+  
+  public File getSelected()
+  {
+    return files[selected];
+  }
+  
+  public void draw() {
+    float interval = width / (float)getMax();
+    stroke(255);
+    for (int i = 0; i < getMax(); i++)
+    {
+      float x = i * interval;
+      
+      line(x, Y, x, Y + HEIGHT);
+      
+      if (i == selected) {
+        fill(120, 255);
+      } else {
+        fill(40, 255);
+      }
+      rect(x, Y, interval, HEIGHT);
+    
+      fill(255);
+      text(files[i].getName(), x, Y, interval, HEIGHT);
+    }
+    
+    if (mustDescend()) {
+      child.draw();
+    }
+  }
+  
+  public void handleClick(int x, int y)
+  {
+    if ((y > Y) && (y < Y + HEIGHT)) {
+      selected = getMax() * x / width;
+      update();
+    }
+    else
+    {
+      if (mustDescend()) {
+        child.handleClick(x, y);
+      }
+    }
+  }
+  
+  public void setRoot(File newRoot)
+  {
+    root = newRoot;
+    update();
   }
   
   public int Y = 0;
