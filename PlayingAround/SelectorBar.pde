@@ -61,14 +61,14 @@ class FileSelectorBar {
       line(x, Y, x, Y + HEIGHT);
       
       if (i == selected) {
-        fill(120, 255);
+        fill(255, 120);
       } else {
-        fill(40, 255);
+        fill(255, 40);
       }
       rect(x, Y, interval, HEIGHT);
     
       fill(255);
-      text(files[i].getName(), x, Y, interval, HEIGHT);
+      text(files[i].getName(), x+3, Y+2, interval, HEIGHT);
     }
     
     if (mustDescend()) {

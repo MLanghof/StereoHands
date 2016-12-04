@@ -10,16 +10,32 @@ PImage img;
 FileSelectorBar fileSelection = new FileSelectorBar(new File("D:/PSHands/"), 0);
 
 
+float zoom = 0.9f;
+float panX = 0;
+float panY = 0;
+
 void setup() {
-  size(2048, 2048);
+  size(2048, 1400, P2D);
   noLoop();
   
   openFile();
+  
+  // Crisp pixels pls
+  hint(DISABLE_TEXTURE_MIPMAPS);
+  ((PGraphicsOpenGL)g).textureSampling(2);
 } 
 
 void draw() {
-  if (img == null) return;
-  image(img, 0, 0); // Displays the image from point (0,0) 
+  background(0);
+  if (img != null)
+  {
+    pushMatrix();
+    translate(panX, panY);
+    scale(zoom);
+    
+    image(img, 0, 0); // Displays the image from point (0,0) 
+    popMatrix();
+  }
   
   fileSelection.draw();
 }
@@ -90,6 +106,7 @@ void loadAlbedo(String path, double offset, double scale)
   img.loadPixels();
   for (int i = 0; i < sq(2048); i++)
   {
+    // TODO: Color scales based on file name
     //color c = color((int)(255 * (db.get() + offset) / scale));
     color c = getColor((float)db.get());
     img.pixels[i] = c;
@@ -102,4 +119,30 @@ color getColor(float value) {
   color c = color(value / 2, 1.0f, abs(value));
   colorMode(RGB, 255);
   return c;
+}
+
+void mouseWheel(MouseEvent event)
+{
+  zoom(event.getCount());
+  redraw();
+}
+
+void zoom(float distance)
+{
+  float newZoom = zoom * pow(0.9, distance);
+  PVector centre = new PVector(mouseX, mouseY);
+  PVector pan = new PVector(panX, panY);
+  PVector diff = PVector.sub(pan, centre).mult(newZoom/zoom);
+  PVector newPan = PVector.add(centre, diff);
+  panX = newPan.x; //<>//
+  panY = newPan.y;
+  zoom = newZoom;
+}
+
+
+void mouseDragged()
+{
+  panX -= pmouseX - mouseX;
+  panY -= pmouseY - mouseY;
+  redraw();
 }
