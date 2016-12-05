@@ -1,14 +1,10 @@
 import java.nio.*; //<>//
- 
-float v = 1.0 / 9.0;
-float[][] kernel = {{ v, v, v }, 
-                    { v, v, v }, 
-                    { v, v, v }};
+
+import gab.opencv.*;
+
+import org.opencv.core.Core;
                     
-PImage img;
-
-FileSelectorBar fileSelection = new FileSelectorBar(new File("D:/PSHands/"), 0);
-
+HandProcessor processor = new HandProcessor();
 
 float zoom = 0.9f;
 float panX = 0;
@@ -18,7 +14,7 @@ void setup() {
   size(2048, 1400, P2D);
   noLoop();
   
-  openFile();
+  processor.openFile();
   
   // Crisp pixels pls
   hint(DISABLE_TEXTURE_MIPMAPS);
@@ -27,112 +23,25 @@ void setup() {
 
 void draw() {
   background(0);
-  if (img != null)
+  if (processor.getCurrentImage() != null)
   {
     pushMatrix();
     translate(panX, panY);
     scale(zoom);
     
-    image(img, 0, 0); // Displays the image from point (0,0) 
+    image(processor.getCurrentImage(), 0, 0);
     popMatrix();
   }
   
-  fileSelection.draw();
-}
-
-void convolute()
-{
-  img.loadPixels();
-
-  // Create an opaque image of the same size as the original
-  PImage edgeImg = createImage(img.width, img.height, RGB);
-
-  // Loop through every pixel in the image
-  for (int y = 1; y < img.height-1; y++) {   // Skip top and bottom edges
-    for (int x = 1; x < img.width-1; x++) {  // Skip left and right edges
-      float sum = 0; // Kernel sum for this pixel
-      for (int ky = -1; ky <= 1; ky++) {
-        for (int kx = -1; kx <= 1; kx++) {
-          // Calculate the adjacent pixel for this kernel point
-          int pos = (y + ky)*img.width + (x + kx);
-          // Image is grayscale, red/green/blue are identical
-          float val = red(img.pixels[pos]);
-          // Multiply adjacent pixels based on the kernel values
-          sum += kernel[ky+1][kx+1] * val;
-        }
-      }
-      // For this pixel in the new image, set the gray value
-      // based on the sum from the kernel
-      edgeImg.pixels[y*img.width + x] = color(sum);
-    }
-  }
-  // State that there are changes to edgeImg.pixels[]
-  edgeImg.updatePixels();
+  processor.draw();
 }
 
 void mouseClicked()
 {
-  fileSelection.handleClick(mouseX, mouseY);
-  openFile();
+  processor.handleClick(mouseX, mouseY);
+  processor.openFile();
 }
 
-void openFile()
-{
-  String path = fileSelection.getFile().getPath();
-  if (path.endsWith(".mat")) {
-    loadAlbedo(path);
-  } else {
-    img = loadImage(path);
-  }
-  redraw();
-}
-
-DoubleBuffer getMatDoubles(String path)
-{
-  byte[] matData = loadBytes(path);
-  return ByteBuffer.wrap(matData, 420 * 8, 2048 * 2048 * 8).order(ByteOrder.LITTLE_ENDIAN).asDoubleBuffer();
-}
-
-void loadAlbedo(String path)
-{
-  loadAlbedo(path, 0.0, 1.0);
-}
-  
-void loadAlbedo(String path, double offset, double scale)
-{
-  DoubleBuffer db = getMatDoubles(path);
-  
-  img = createImage(2048, 2048, RGB);
-  img.loadPixels();
-  for (int i = 0; i < sq(2048); i++)
-  {
-    // TODO: Color scales based on file name
-    //color c = color((int)(255 * (db.get() + offset) / scale));
-    color c = getColor(path, (float)db.get());
-    img.pixels[i] = c;
-  }
-  img.updatePixels();
-}
-
-// Produces a color scale appropriate for the file opened
-color getColor(String path, float value)
-{
-  // Default (a.mat)
-  color ret = color((int)(255 * value));
-  
-  // Vectors
-  
-  if (path.endsWith("px.mat") ||
-      path.endsWith("py.mat")) {
-    colorMode(HSB, 1.0f);
-    ret = color(value, 1.0f, (abs(value)));
-    colorMode(RGB, 255);
-  }
-  if (path.endsWith("pz.mat")) {
-    ret = color(255 * (1.0 - value));
-  }
-  return ret;
-}
 
 void mouseWheel(MouseEvent event)
 {
@@ -147,7 +56,7 @@ void zoom(float distance)
   PVector pan = new PVector(panX, panY);
   PVector diff = PVector.sub(pan, centre).mult(newZoom/zoom);
   PVector newPan = PVector.add(centre, diff);
-  panX = newPan.x; //<>//
+  panX = newPan.x;
   panY = newPan.y;
   zoom = newZoom;
 }
