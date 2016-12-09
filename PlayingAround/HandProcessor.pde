@@ -1,35 +1,64 @@
 class HandProcessor
 {
+  Take currentTake;
+  
   PImage img;
 
 
-  public SimpleSelectorBar stepSelector = new SimpleSelectorBar(5, 0);
+  public SimpleSelectorBar stepSelector = new SimpleSelectorBar(1, 0);
   public FileSelectorBar fileSelector = new FileSelectorBar(new File("D:/PSHands/"), 50);
+
+  ArrayList<Step> steps = new ArrayList<Step>();
+  
+  public HandProcessor()
+  {
+    openFile();
+    steps.add(new AlbedoStep(currentTake));
+    steps.add(new ShapeIndexStep(currentTake));
+    steps.add(new NormalsStep(currentTake));
+    steps.add(new FlowStep(steps.get(1)));
+    stepSelector.max = steps.size();
+  }
 
   public PImage getCurrentImage()
   {
-    return img;
+    return currentTake.shapeIndex;
+    //return img;
   }
   
-  public void draw()
+  public void drawUI()
   {
     stepSelector.draw();
     fileSelector.draw();
   }
   
+  public void drawImage()
+  {
+    getCurrentStep().draw();
+  }
+  
   public void handleClick(int x, int y)
   {
-    stepSelector.handleClick(mouseX, mouseY);
-    fileSelector.handleClick(mouseX, mouseY);
+    if (stepSelector.handleClick(mouseX, mouseY)) {
+      redraw();
+    }
+    if (fileSelector.handleClick(mouseX, mouseY)) {
+      openFile();
+    }
   }
   
   void openFile()
   {
-    img = new ImageLoader().openFile(fileSelector.getFile().getPath());
+    //img = new ImageLoader().openFile(fileSelector.getFile().getPath());
+    currentTake = new Take(fileSelector.getFile().getPath());
+    
     redraw();
   }
   
-  
+  Step getCurrentStep()
+  {
+    return steps.get(stepSelector.getCurrent());
+  }
   
   
  

@@ -1,20 +1,24 @@
-import java.nio.*; //<>//
+import java.nio.*;
 
 import gab.opencv.*;
 
 import org.opencv.core.Core;
                     
-HandProcessor processor = new HandProcessor();
+HandProcessor processor;
 
 float zoom = 0.9f;
 float panX = 0;
 float panY = 0;
 
+
+final int SIZE = 2048;
+  
+
 void setup() {
   size(2048, 1400, P2D);
   noLoop();
   
-  processor.openFile();
+  processor =  new HandProcessor();
   
   // Crisp pixels pls
   hint(DISABLE_TEXTURE_MIPMAPS);
@@ -22,6 +26,7 @@ void setup() {
 } 
 
 void draw() {
+  //surface.setLocation(200, 200);
   background(0);
   if (processor.getCurrentImage() != null)
   {
@@ -29,17 +34,17 @@ void draw() {
     translate(panX, panY);
     scale(zoom);
     
-    image(processor.getCurrentImage(), 0, 0);
+    processor.drawImage();
+    //image(processor.getCurrentImage(), 0, 0);
     popMatrix();
   }
   
-  processor.draw();
+  processor.drawUI();
 }
 
 void mouseClicked()
 {
   processor.handleClick(mouseX, mouseY);
-  processor.openFile();
 }
 
 

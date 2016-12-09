@@ -123,7 +123,9 @@ class FileSelectorBar extends SelectorBar
   }
   
   public boolean mustDescend() {
-    return getSelected().isDirectory();
+    //return getSelected().isDirectory();
+    String[] matches = match(getSelected().getName(), "\\A\\d\\d\\d");
+    return matches == null;
   }
   
   public int getMax()
@@ -169,3 +171,11 @@ class FileSelectorBar extends SelectorBar
     update();
   }
 }
+
+/*class StepSelectorBar extends SimpleSelectorBar
+{
+  public StepSelectorBar(int max, int Y)
+  {
+    super(max, Y);
+  }
+}*/
