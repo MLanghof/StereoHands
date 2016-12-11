@@ -7,11 +7,6 @@ class DctStep extends CalculationStep
 {
   PImage frequencies;
   
-  final float maxThreshold = 0.1;
-  
-  int ws, hs;
-  
-  
   public DctStep(Step below)
   {
     super(below.take);
@@ -20,8 +15,6 @@ class DctStep extends CalculationStep
   public void setTake(Take take)
   {
     super.setTake(take);
-    ws = w/s;
-    hs = h/s;
     frequencies = createImage(w, h, RGB);
   }
   
@@ -47,17 +40,99 @@ class DctStep extends CalculationStep
         
         Core.dft(subMat, subMat);
         
+        float dc = abs((float)subMat.get(0, 0)[0]);
         for (int ys = 0; ys < s; ys++) {
           for (int xs = 0; xs < s; xs++) {
-            int pos = (y + ys) * w + x + xs;
-            frequencies.pixels[pos] = color(log(-(float)subMat.get(ys, xs)[0]) * 10);
+            int pos = (y + (ys + s/2) % s) * w + x + xs;
+            frequencies.pixels[pos] = color(sqrt(abs((float)subMat.get(ys, xs)[0] / dc)) * 255);
           }
         }
+        frequencies.pixels[(y + s/2) * w + x] = color(255, 0, 0);
       }
       frequencies.updatePixels();
     }
   }
 }
+
+class FlowFromDctStep extends CalculationStep
+{
+  DctStep below;
+  
+  float[] flowAngle;
+  float[] flowMag;
+  
+  int ws, hs;
+  
+  public FlowFromDctStep(DctStep below)
+  {
+    super(below.take);
+    this.below = below;
+  }
+  
+  public void setTake(Take take)
+  {
+    super.setTake(take);
+    ws = w/s;
+    hs = h/s;
+    flowAngle = new float[ws * hs];
+    flowMag = new float[ws * hs];
+  }
+  
+  void drawImpl()
+  {
+    //below.draw();
+    image(take.shapeIndex, 0, 0);
+    pushMatrix();
+    translate(0.5 + s/2, 0.5 + s/2);
+    scale(s, s);
+    stroke(color(0, 0, 255));
+    strokeWeight(1 / 20.0);
+    for (int y = screenStartY() / s; y < screenEndY() / s; y++) {
+      for (int x = screenStartX() / s; x < screenEndX() / s; x++)
+      {
+        float angle = flowAngle[y*ws + x];
+        float mag = flowMag[y*ws + x];
+        float dx = cos(angle) * mag / 10;
+        float dy = sin(angle) * mag / 10;
+        line(x - dx * 10, y - dy * 10, x + dx * 10, y + dy * 10);
+        line(x - dy, y + dx, x + dy, y - dx);
+      }
+    }
+    popMatrix();
+  }
+  
+  public void calculateImpl()
+  {
+    below.calculate();
+    below.frequencies.loadPixels();
+    for (int y = 0; y < hs; y += 1) {
+      for (int x = 0; x < ws; x += 1)
+      {
+        float max = 0;
+        PVector maxLoc = new PVector();
+        
+        for (int ys = 0; ys < s; ys++) {
+          for (int xs = 0; xs < s; xs++) {
+            int pos = (y*s + ys) * w + x*s + xs;
+            color c = below.frequencies.pixels[pos];
+            if (c == color(255, 0, 0)) continue;
+            PVector v = new PVector(xs, ys - s/2);
+            //if (v.mag() < 3) continue;
+            if (red(c) > max) {
+              max = red(c);
+              maxLoc.x = xs;
+              maxLoc.y = ys - s/2;
+            }
+          }
+        }
+        
+        flowAngle[y * ws + x] = maxLoc.heading() + HALF_PI;
+        flowMag[y * ws + x] = maxLoc.mag() / s * max / 255.0;
+      }
+    }
+  }
+}
+
 class FullDftStep extends CalculationStep
 {
   PImage frequencies;
@@ -172,6 +247,7 @@ class FullDctStep extends CalculationStep
         max = max(val, max);
       }
     }
+    println(min, max);
     
     frequencies.loadPixels();
     for (int y = 0; y < m; y++) {

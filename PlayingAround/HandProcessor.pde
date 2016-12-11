@@ -9,6 +9,7 @@ class HandProcessor
   ShapeIndexStep shapeIndexStep;
   SmoothNormalsStep smoothNormalsStep;
   FlowStep flowStep;
+  DctStep dctStep;
   
   public HandProcessor()
   {
@@ -22,7 +23,9 @@ class HandProcessor
     flowStep = new FlowStep(smoothNormalsStep);
     stepSelector.add(flowStep);
     stepSelector.add(new DownsampleFlowStep(flowStep));
-    stepSelector.add(new DctStep(shapeIndexStep));
+    dctStep = new DctStep(shapeIndexStep);
+    stepSelector.add(dctStep);
+    stepSelector.add(new FlowFromDctStep(dctStep));
     stepSelector.add(new FullDftStep(shapeIndexStep));
     stepSelector.add(new FullDctStep(shapeIndexStep));
   }
