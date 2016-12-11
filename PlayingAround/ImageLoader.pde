@@ -63,6 +63,8 @@ class ImageLoader
 
 class Take
 {
+  public String path;
+  
   public PImage shapeIndex;
   public PImage albedo;
   public PVector[] normals;
@@ -73,6 +75,7 @@ class Take
   
   public Take(String folderPath)
   {
+    this.path = folderPath;
     shapeIndex = loadImage(folderPath + "/si.bmp");
     roi = getRoi(shapeIndex);
     shapeIndex = shapeIndex.get(roi.x, roi.y, roi.width, roi.height);
@@ -116,7 +119,7 @@ class Take
     {
       int x = i % SIZE;
       int y = i / SIZE;
-      PVector val = new PVector((float)dbX.get(), (float)dbY.get(), (float)dbZ.get());
+      PVector val = new PVector((float)dbX.get(), -(float)dbY.get(), (float)dbZ.get());
       if (roi.contains(x, y)) {
         ret[(x - roi.x) + (y - roi.y) * roi.width] = val;
       }

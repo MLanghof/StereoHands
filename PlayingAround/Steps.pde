@@ -2,12 +2,44 @@ abstract class Step
 {
   Take take;
   
+  int h, w;
+  
   public Step(Take take)
   {
-    this.take = take;    
+    setTake(take);    
   }
   
   abstract public void draw();
+  
+  public void setTake(Take take)
+  {
+    this.take = take;
+    h = take.roi.height;
+    w = take.roi.width;
+  }
+  
+  public boolean onScreen(float x, float y)
+  {
+    float sx = screenX(x, y);
+    float sy = screenY(x, y);
+    return (sx > 0 && sx < width && sy > 0 && sy < height);
+  }
+  
+  public int screenStartX() {
+    return floor(constrain(-panX / zoom, 0, w));
+  }
+  
+  public int screenStartY() {
+    return floor(constrain(-panY / zoom, 0, h));
+  }
+  
+  public int screenEndX() {
+    return ceil(constrain((width - panX) / zoom, 0, w));
+  }
+  
+  public int screenEndY() {
+    return ceil(constrain((height - panY) / zoom, 0, h));
+  }
 }
 
 abstract class InputStep extends Step
@@ -37,7 +69,21 @@ abstract class CalculationStep extends Step
   
   abstract public void drawImpl();
   
-  abstract public void calculate();
+  public void calculate()
+  {
+    if (!calculated) {
+      calculateImpl();
+    }
+    calculated = true;
+  }
+  
+  abstract public void calculateImpl();
+  
+  public void setTake(Take take)
+  {
+    super.setTake(take);
+    calculated = false;
+  }
 }
 
 class ShapeIndexStep extends InputStep
@@ -75,10 +121,22 @@ class NormalsStep extends InputStep
   
   public void draw()
   {
-    for (int y = 0; y < take.roi.height; y++) {
-      for (int x = 0; x < take.roi.width; x++) {
-        
+    image(take.shapeIndex, 0, 0);
+    int d = 1;
+    pushMatrix();
+    translate(0.5, 0.5);
+    stroke(color(255, 0, 0));
+    strokeWeight(d / 20.0);
+    for (int y = 0; y < h; y+=d) {
+      for (int x = 0; x < w; x+=d) {
+        if (!onScreen(x, y)) continue;
+        PVector n = take.normals[y*w + x];
+        float dx = n.x * d / 5;
+        float dy = n.y * d / 5;
+        line(x, y, x + dx * 8, y + dy * 8);
+        line(x - dy, y + dx, x + dy, y - dx);
       }
     }
+    popMatrix();
   }
 }

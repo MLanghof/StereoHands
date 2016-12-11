@@ -35,10 +35,11 @@ void draw() {
     scale(zoom);
     
     processor.drawImage();
-    //image(processor.getCurrentImage(), 0, 0);
+    
     popMatrix();
   }
   
+  strokeWeight(1);
   processor.drawUI();
 }
 
