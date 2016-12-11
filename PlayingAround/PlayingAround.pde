@@ -2,7 +2,7 @@ import java.nio.*;
 
 import gab.opencv.*;
 
-import org.opencv.core.Core;
+import org.opencv.core.*;
                     
 HandProcessor processor;
 
@@ -26,7 +26,7 @@ void setup() {
 } 
 
 void draw() {
-  //surface.setLocation(200, 200);
+  surface.setLocation(180, -10);
   background(0);
   if (processor.getCurrentImage() != null)
   {

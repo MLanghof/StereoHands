@@ -179,3 +179,43 @@ class FileSelectorBar extends SelectorBar
     super(max, Y);
   }
 }*/
+
+class StepSelectorBar extends SelectorBar
+{
+  ArrayList<Step> steps;
+  
+  public StepSelectorBar(int Y)
+  {
+    super(Y);
+    steps = new ArrayList<Step>();
+  }
+  
+  public void update()
+  {
+  }
+  
+  public int getMax()
+  {
+    return steps.size();
+  }
+  
+  public String getName(int index)
+  {
+    return steps.get(index).getName();
+  }
+  
+  public int getCurrent()
+  {
+    return selected;
+  }
+  
+  public Step getStep()
+  {
+    return steps.get(getCurrent());
+  }
+  
+  public void add(Step step)
+  {
+    steps.add(step);
+  }
+}

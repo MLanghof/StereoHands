@@ -2,27 +2,29 @@ class HandProcessor
 {
   Take currentTake;
 
-  public SimpleSelectorBar stepSelector = new SimpleSelectorBar(1, 0);
+  public StepSelectorBar stepSelector = new StepSelectorBar(0);
   public SimpleSelectorBar paramSelector = new SimpleSelectorBar(8, 40);
   public FileSelectorBar fileSelector = new FileSelectorBar(new File("D:/PSHands/"), 90);
   
+  ShapeIndexStep shapeIndexStep;
   SmoothNormalsStep smoothNormalsStep;
   FlowStep flowStep;
-
-  ArrayList<Step> steps = new ArrayList<Step>();
   
   public HandProcessor()
   {
     openFile();
-    steps.add(new AlbedoStep(currentTake));
-    steps.add(new ShapeIndexStep(currentTake));
-    steps.add(new NormalsStep(currentTake));
-    smoothNormalsStep = new SmoothNormalsStep(steps.get(1));
-    steps.add(smoothNormalsStep);
+    stepSelector.add(new AlbedoStep(currentTake));
+    shapeIndexStep = new ShapeIndexStep(currentTake);
+    stepSelector.add(shapeIndexStep);
+    stepSelector.add(new NormalsStep(currentTake));
+    smoothNormalsStep = new SmoothNormalsStep(shapeIndexStep);
+    stepSelector.add(smoothNormalsStep);
     flowStep = new FlowStep(smoothNormalsStep);
-    steps.add(flowStep);
-    steps.add(new DownsampleFlowStep(flowStep));
-    stepSelector.max = steps.size();
+    stepSelector.add(flowStep);
+    stepSelector.add(new DownsampleFlowStep(flowStep));
+    stepSelector.add(new DctStep(shapeIndexStep));
+    stepSelector.add(new FullDftStep(shapeIndexStep));
+    stepSelector.add(new FullDctStep(shapeIndexStep));
   }
 
   public PImage getCurrentImage()
@@ -40,7 +42,7 @@ class HandProcessor
   
   public void drawImage()
   {
-    getCurrentStep().draw();
+    stepSelector.getStep().draw();
   }
   
   public void handleClick(int x, int y)
@@ -49,11 +51,11 @@ class HandProcessor
       redraw();
     }
     if (paramSelector.handleClick(mouseX, mouseY)) {
-      if (getCurrentStep() == smoothNormalsStep) {
+      if (stepSelector.getStep() == smoothNormalsStep) {
         smoothNormalsStep.k = paramSelector.getCurrent();
         openFile();
       }
-      if (getCurrentStep() == flowStep) {
+      if (stepSelector.getStep() == flowStep) {
         flowStep.k = paramSelector.getCurrent();
         openFile();
       }
@@ -70,14 +72,9 @@ class HandProcessor
     if (currentTake == null || currentTake.path != path) {
       currentTake = new Take(path);
     }
-    for (Step step : steps) {
+    for (Step step : stepSelector.steps) {
       step.setTake(currentTake);
     }
     redraw();
-  }
-  
-  Step getCurrentStep()
-  {
-    return steps.get(stepSelector.getCurrent());
   }
 }

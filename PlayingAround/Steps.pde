@@ -1,3 +1,5 @@
+import java.lang.reflect.*;
+
 abstract class Step
 {
   Take take;
@@ -39,6 +41,11 @@ abstract class Step
   
   public int screenEndY() {
     return ceil(constrain((height - panY) / zoom, 0, h));
+  }
+  
+  public String getName()
+  {
+    return this.getClass().getSimpleName();
   }
 }
 
