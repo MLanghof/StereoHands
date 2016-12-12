@@ -8,6 +8,7 @@ abstract class Step
   
   public Step(Take take)
   {
+    if (take == null) return; // FML
     setTake(take);    
   }
   

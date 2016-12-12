@@ -1,25 +1,39 @@
 
-final int s = 8;
+// Window size of dct sampling
+final int s = 16;
 
+final float maxRidgeInterval = 7; // Maximum distance between ridge tops that is considered a ridge
+final float minRidgeFrequency = 1.0 / maxRidgeInterval;
+// s / 2 periods in s -> f = 1/2    -> mag = s;
+// 1 / 2 periods in s -> f = 1/(2s) -> mag = 1;
+// -> mag = f * 2s
+final float minDctMag = minRidgeFrequency * 2 * s;
+
+// This is necessary to actually load the OpenCV library
 OpenCV cv = new OpenCV(this, s, s);
 
 class DctStep extends CalculationStep
 {
   PImage frequencies;
   
+  // Spacing between DCTs.
+  int d = 2;
+  
   public DctStep(Step below)
   {
-    super(below.take);
+    super(null); // Polymorphy is fun >_>
+    setTake(below.take);
   }
   
   public void setTake(Take take)
   {
     super.setTake(take);
-    frequencies = createImage(w, h, RGB);
+    frequencies = createImage(w * s / d, h * s / d, RGB); //<>//
   }
   
   void drawImpl()
   {
+    scale((float)d / s);
     image(frequencies, 0, 0);
   }
   
@@ -28,8 +42,8 @@ class DctStep extends CalculationStep
     Mat subMat = new Mat(s, s, CvType.CV_32FC1);
     frequencies.loadPixels();
     take.shapeIndex.loadPixels();
-    for (int y = 0; y < h - s; y += s) {
-      for (int x = 0; x < w - s; x += s)
+    for (int y = 0; y < h - s; y += d) {
+      for (int x = 0; x < w - s; x += d)
       {
         for (int ys = 0; ys < s; ys++) {
           for (int xs = 0; xs < s; xs++) {
@@ -43,11 +57,11 @@ class DctStep extends CalculationStep
         float dc = abs((float)subMat.get(0, 0)[0]);
         for (int ys = 0; ys < s; ys++) {
           for (int xs = 0; xs < s; xs++) {
-            int pos = (y + (ys + s/2) % s) * w + x + xs;
+            int pos = (y * s/d + (ys + s/2) % s) * w * s/d + x * s/d + xs;
             frequencies.pixels[pos] = color(sqrt(abs((float)subMat.get(ys, xs)[0] / dc)) * 255);
           }
         }
-        frequencies.pixels[(y + s/2) * w + x] = color(255, 0, 0);
+        frequencies.pixels[(y * s/d + s/2) * w * s/d + x * s/d] = color(255, 0, 0);
       }
       frequencies.updatePixels();
     }
@@ -61,21 +75,25 @@ class FlowFromDctStep extends CalculationStep
   float[] flowAngle;
   float[] flowMag;
   
-  int ws, hs;
+  int d;
+  
+  int wd, hd;
   
   public FlowFromDctStep(DctStep below)
   {
-    super(below.take);
+    super(null);
     this.below = below;
+    d = below.d;
+    setTake(below.take);
   }
   
   public void setTake(Take take)
   {
     super.setTake(take);
-    ws = w/s;
-    hs = h/s;
-    flowAngle = new float[ws * hs];
-    flowMag = new float[ws * hs];
+    wd = w / d;
+    hd = h / d;
+    flowAngle = new float[wd * hd];
+    flowMag = new float[wd * hd];
   }
   
   void drawImpl()
@@ -83,15 +101,16 @@ class FlowFromDctStep extends CalculationStep
     //below.draw();
     image(take.shapeIndex, 0, 0);
     pushMatrix();
-    translate(0.5 + s/2, 0.5 + s/2);
-    scale(s, s);
-    stroke(color(0, 0, 255));
-    strokeWeight(1 / 20.0);
-    for (int y = screenStartY() / s; y < screenEndY() / s; y++) {
-      for (int x = screenStartX() / s; x < screenEndX() / s; x++)
+    translate(d/2, d/2);
+    int p = d;
+    scale(p, p);
+    stroke(color(255, 0, 0));
+    strokeWeight(1 / 10.0);
+    for (int y = screenStartY() / p; y < screenEndY() / p; y++) {
+      for (int x = screenStartX() / p; x < screenEndX() / p; x++)
       {
-        float angle = flowAngle[y*ws + x];
-        float mag = flowMag[y*ws + x];
+        float angle = flowAngle[y*wd + x];
+        float mag = flowMag[y*wd + x];
         float dx = cos(angle) * mag / 10;
         float dy = sin(angle) * mag / 10;
         line(x - dx * 10, y - dy * 10, x + dx * 10, y + dy * 10);
@@ -105,29 +124,28 @@ class FlowFromDctStep extends CalculationStep
   {
     below.calculate();
     below.frequencies.loadPixels();
-    for (int y = 0; y < hs; y += 1) {
-      for (int x = 0; x < ws; x += 1)
+    for (int y = 0; y < hd; y += 1) {
+      for (int x = 0; x < wd; x += 1)
       {
         float max = 0;
         PVector maxLoc = new PVector();
         
         for (int ys = 0; ys < s; ys++) {
           for (int xs = 0; xs < s; xs++) {
-            int pos = (y*s + ys) * w + x*s + xs;
+            int pos = (y*s + ys) * w * s/d + x*s + xs;
             color c = below.frequencies.pixels[pos];
             if (c == color(255, 0, 0)) continue;
             PVector v = new PVector(xs, ys - s/2);
-            //if (v.mag() < 3) continue;
+            if (v.mag() <= minRidgeFrequency) continue;
             if (red(c) > max) {
               max = red(c);
-              maxLoc.x = xs;
-              maxLoc.y = ys - s/2;
+              maxLoc = v;
             }
           }
         }
         
-        flowAngle[y * ws + x] = maxLoc.heading() + HALF_PI;
-        flowMag[y * ws + x] = maxLoc.mag() / s * max / 255.0;
+        flowAngle[y * wd + x] = maxLoc.heading() + HALF_PI;
+        flowMag[y * wd + x] = maxLoc.mag() * d/s * max / 255.0;
       }
     }
   }

@@ -74,3 +74,15 @@ void mouseDragged()
   panY -= pmouseY - mouseY;
   redraw();
 }
+
+void keyPressed()
+{
+  if (key == ' ') {
+    saveOutput();
+  }
+}
+
+void saveOutput()
+{
+  
+}
