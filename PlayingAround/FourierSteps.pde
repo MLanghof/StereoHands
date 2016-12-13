@@ -25,20 +25,12 @@ class DctStep extends CalculationStep
   
   public DctStep(Step below)
   {
-    super(null); // Polymorphy is fun >_>
-    setTake(below.take);
-  }
-   //<>//
-  public void setTake(Take take)
-  {
-    super.setTake(take);
-    frequencies = createImage(w * s / d, h * s / d, RGB); //<>//
+    super(below.take);
   }
   
-  void drawImpl()
+  public void allocateResources() //<>//
   {
-    scale((float)d / s);
-    image(frequencies, 0, 0);
+    frequencies = createImage(w * s / d, h * s / d, RGB);
   }
   
   public void calculateImpl()
@@ -70,6 +62,12 @@ class DctStep extends CalculationStep
       frequencies.updatePixels();
     }
   }
+  
+  void drawImpl()
+  {
+    scale((float)d / s);
+    image(frequencies, 0, 0);
+  }
 }
 
 class FlowFromDctStep extends CalculationStep
@@ -85,43 +83,17 @@ class FlowFromDctStep extends CalculationStep
   
   public FlowFromDctStep(DctStep below)
   {
-    super(null);
+    super(below.take);
     this.below = below;
     d = below.d;
-    setTake(below.take);
   }
   
-  public void setTake(Take take)
+  public void allocateResources()
   {
-    super.setTake(take);
     wd = w / d;
     hd = h / d;
     flowAngle = new float[wd * hd];
     flowMag = new float[wd * hd];
-  }
-  
-  void drawImpl()
-  {
-    //below.draw();
-    image(take.shapeIndex, 0, 0);
-    pushMatrix();
-    translate(d/2, d/2);
-    int p = d;
-    scale(p, p);
-    stroke(color(255, 0, 0));
-    strokeWeight(1 / 10.0);
-    for (int y = screenStartY() / p; y < screenEndY() / p; y++) {
-      for (int x = screenStartX() / p; x < screenEndX() / p; x++)
-      {
-        float angle = flowAngle[y*wd + x];
-        float mag = flowMag[y*wd + x];
-        float dx = cos(angle) * mag / 5;
-        float dy = sin(angle) * mag / 5;
-        line(x - dx * 10, y - dy * 10, x + dx * 10, y + dy * 10);
-        line(x - dy, y + dx, x + dy, y - dx);
-      }
-    }
-    popMatrix();
   }
   
   public void calculateImpl()
@@ -155,12 +127,37 @@ class FlowFromDctStep extends CalculationStep
       }
     }
   }
+  
+  void drawImpl()
+  {
+    //below.draw();
+    image(take.shapeIndex, 0, 0);
+    pushMatrix();
+    translate(d/2, d/2);
+    int p = d;
+    scale(p, p);
+    stroke(color(255, 0, 0));
+    strokeWeight(1 / 10.0);
+    for (int y = screenStartY() / p; y < screenEndY() / p; y++) {
+      for (int x = screenStartX() / p; x < screenEndX() / p; x++)
+      {
+        float angle = flowAngle[y*wd + x];
+        float mag = flowMag[y*wd + x];
+        float dx = cos(angle) * mag / 5;
+        float dy = sin(angle) * mag / 5;
+        line(x - dx * 10, y - dy * 10, x + dx * 10, y + dy * 10);
+        line(x - dy, y + dx, x + dy, y - dx);
+      }
+    }
+    popMatrix();
+  }
 }
 
 class FullDftStep extends CalculationStep
 {
   PImage frequencies;
   
+  // Maximum of width and height
   int m;
   
   public FullDftStep(Step below)
@@ -168,17 +165,11 @@ class FullDftStep extends CalculationStep
     super(below.take);
   }
   
-  public void setTake(Take take)
+  public void allocateResources()
   {
-    super.setTake(take);
     m = max(h, w);
     m += m % 2;
     frequencies = createImage(m, m, RGB);
-  }
-  
-  void drawImpl()
-  {
-    image(frequencies, 0, 0);
   }
   
   public void calculateImpl()
@@ -223,12 +214,18 @@ class FullDftStep extends CalculationStep
     }
     frequencies.updatePixels();
   }
+  
+  void drawImpl()
+  {
+    image(frequencies, 0, 0);
+  }
 }
 
 class FullDctStep extends CalculationStep
 {
   PImage frequencies;
   
+  // Maximum of width and height
   int m;
   
   public FullDctStep(Step below)
@@ -236,17 +233,11 @@ class FullDctStep extends CalculationStep
     super(below.take);
   }
   
-  public void setTake(Take take)
+  public void allocateResources()
   {
-    super.setTake(take);
     m = max(h, w);
     m += m % 2;
     frequencies = createImage(m, m, RGB);
-  }
-  
-  void drawImpl()
-  {
-    image(frequencies, 0, 0);
   }
   
   public void calculateImpl()
@@ -281,5 +272,10 @@ class FullDctStep extends CalculationStep
       }
     }
     frequencies.updatePixels();
+  }
+  
+  void drawImpl()
+  {
+    image(frequencies, 0, 0);
   }
 }

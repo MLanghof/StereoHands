@@ -8,7 +8,6 @@ abstract class Step
   
   public Step(Take take)
   {
-    if (take == null) return; // FML
     setTake(take);    
   }
   
@@ -36,15 +35,15 @@ abstract class Step
     return floor(constrain(-panY / zoom, 0, h));
   }
   
-  public int screenEndX() {
+  public float screenEndX() {
     return ceil(constrain((width - panX) / zoom, 0, w));
   }
   
-  public int screenEndY() {
+  public float screenEndY() {
     return ceil(constrain((height - panY) / zoom, 0, h));
   }
   
-  public String getName()
+  public String toString()
   {
     return this.getClass().getSimpleName();
   }
@@ -60,6 +59,7 @@ abstract class InputStep extends Step
 
 abstract class CalculationStep extends Step
 {
+  boolean allocated = false;
   boolean calculated = false;
   
   public CalculationStep(Take take)
@@ -80,10 +80,14 @@ abstract class CalculationStep extends Step
   public void calculate()
   {
     if (!calculated) {
+      allocateResources();
       calculateImpl();
     }
     calculated = true;
   }
+  
+  public void allocateResources()
+  { /*Empty so children that don't need this don't have to redeclare*/ }
   
   abstract public void calculateImpl();
   

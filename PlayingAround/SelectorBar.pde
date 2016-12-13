@@ -15,6 +15,7 @@ abstract class SelectorBar
   {
     if ((y > Y) && (y < Y + HEIGHT)) {
       selected = getMax() * x / width;
+      // Intentionally always (even if selection didn't change)
       update();
       return true;
     }
@@ -32,9 +33,9 @@ abstract class SelectorBar
       line(x, Y, x, Y + HEIGHT);
       
       if (i == selected) {
-        fill(255, 120);
+        fill(128, 180);
       } else {
-        fill(255, 40);
+        fill(128, 80);
       }
       rect(x, Y, interval, HEIGHT);
     
@@ -43,14 +44,18 @@ abstract class SelectorBar
     }
   }
   
-  public abstract void update();
+  public int getCurrentIndex()
+  {
+    return selected;
+  }
+  
+  public void update()
+  { /*Empty so children that don't need this don't have to redeclare*/ }
   
   public abstract int getMax();
   
   public abstract String getName(int index);
 }
-
-
 
 class SimpleSelectorBar extends SelectorBar
 {
@@ -62,10 +67,6 @@ class SimpleSelectorBar extends SelectorBar
     this.max = max;
   }
   
-  public void update()
-  {
-  }
-  
   public int getMax()
   {
     return max;
@@ -74,11 +75,6 @@ class SimpleSelectorBar extends SelectorBar
   public String getName(int index)
   {
     return Integer.toString(index);
-  }
-  
-  public int getCurrent()
-  {
-    return selected;
   }
 }
 
@@ -180,42 +176,33 @@ class FileSelectorBar extends SelectorBar
   }
 }*/
 
-class StepSelectorBar extends SelectorBar
+class ObjectSelectorBar<T> extends SelectorBar
 {
-  ArrayList<Step> steps;
+  ArrayList<T> objects;
   
-  public StepSelectorBar(int Y)
+  public ObjectSelectorBar(int Y)
   {
     super(Y);
-    steps = new ArrayList<Step>();
-  }
-  
-  public void update()
-  {
+    objects = new ArrayList<T>();
   }
   
   public int getMax()
   {
-    return steps.size();
+    return objects.size();
   }
   
   public String getName(int index)
   {
-    return steps.get(index).getName();
+    return objects.get(index).toString();
   }
   
-  public int getCurrent()
+  public T getCurrent()
   {
-    return selected;
+    return objects.get(getCurrentIndex());
   }
   
-  public Step getStep()
+  public void add(T object)
   {
-    return steps.get(getCurrent());
-  }
-  
-  public void add(Step step)
-  {
-    steps.add(step);
+    objects.add(object);
   }
 }

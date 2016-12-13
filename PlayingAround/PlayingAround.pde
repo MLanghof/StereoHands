@@ -26,7 +26,7 @@ void setup() {
 } 
 
 void draw() {
-  surface.setLocation(180, -10);
+  if (frameCount == 1) surface.setLocation(180, -10);
   background(0);
   if (processor.getCurrentImage() != null)
   {

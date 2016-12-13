@@ -86,7 +86,7 @@ class Take
   public PImage loadAlbedo(String path)
   {
     DoubleBuffer db = loader.getMatDoubles(path);
-    PImage ret = newImage();
+    PImage ret = createImage(roi.width, roi.height, RGB);
     // Find maximum value
     float max = 0;
     for (int i = 0; i < sq(SIZE); i++) {
@@ -148,10 +148,5 @@ class Take
   int getArea()
   {
     return roi.width * roi.height;
-  }
-  
-  PImage newImage()
-  {
-    return createImage(roi.width, roi.height, RGB);
   }
 }

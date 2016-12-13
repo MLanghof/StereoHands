@@ -13,33 +13,10 @@ class FlowStep extends CalculationStep
     this.below = below;
   }
   
-  public void setTake(Take take)
+  public void allocateResources()
   {
-    super.setTake(take);
     flowAngle = new float[w * h];
     flowMag = new float[w * h];
-  }
-  
-  void drawImpl()
-  {
-    int d = 1;
-    below.draw();
-    pushMatrix();
-    translate(0.5, 0.5);
-    stroke(color(0, 0, 255));
-    strokeWeight(d / 20.0);
-    for (int y = screenStartY(); y < screenEndY(); y += d) {
-      for (int x = screenStartX(); x < screenEndX(); x += d)
-      {
-        float angle = flowAngle[y*w + x];
-        float mag = flowMag[y*w + x];
-        float dx = cos(angle) * d * mag;
-        float dy = sin(angle) * d * mag;
-        line(x - dx * 10, y - dy * 10, x + dx * 10, y + dy * 10);
-        line(x - dy, y + dx, x + dy, y - dx);
-      }
-    }
-    popMatrix();
   }
   
  
@@ -81,6 +58,28 @@ class FlowStep extends CalculationStep
       }
     }
   }
+  
+  void drawImpl()
+  {
+    int d = 1;
+    below.draw();
+    pushMatrix();
+    translate(0.5, 0.5);
+    stroke(color(0, 0, 255));
+    strokeWeight(d / 20.0);
+    for (int y = screenStartY(); y < screenEndY(); y += d) {
+      for (int x = screenStartX(); x < screenEndX(); x += d)
+      {
+        float angle = flowAngle[y*w + x];
+        float mag = flowMag[y*w + x];
+        float dx = cos(angle) * d * mag;
+        float dy = sin(angle) * d * mag;
+        line(x - dx * 10, y - dy * 10, x + dx * 10, y + dy * 10);
+        line(x - dy, y + dx, x + dy, y - dx);
+      }
+    }
+    popMatrix();
+  }
 }
 
 
@@ -98,12 +97,33 @@ class SmoothNormalsStep extends CalculationStep
     this.below = below;
   }
   
-  public void setTake(Take take)
+  public void allocateResources()
   {
-    super.setTake(take);
     normals = new PVector[w * h];
     for (int i = 0; i < take.getArea(); i++) {
       normals[i] = take.normals[i].copy();
+    }
+  }
+  
+  public void calculateImpl()
+  {
+    // Loop through every pixel in the image
+    for (int y = k; y < h - k; y++) {   // Skip top and bottom edges
+      for (int x = k; x < w - k; x++)
+      {
+        int pos0 = y * w + x;
+        PVector sum = new PVector(0, 0); // Kernel sum for this pixel
+        PVector n0 = normals[pos0];
+        for (int ky = -k; ky <= k; ky++) {
+          for (int kx = -k; kx <= k; kx++) {
+            int pos = (y + ky) * w + (x + kx);
+            sum.add(take.normals[pos]);
+          }
+        }
+        sum.mult(1.0 / sq(2*k+1));
+        
+        n0.sub(sum);
+      }
     }
   }
   
@@ -129,28 +149,6 @@ class SmoothNormalsStep extends CalculationStep
     }
     popMatrix();
   }
-  
-  public void calculateImpl()
-  {
-    // Loop through every pixel in the image
-    for (int y = k; y < h - k; y++) {   // Skip top and bottom edges
-      for (int x = k; x < w - k; x++)
-      {
-        int pos0 = y * w + x;
-        PVector sum = new PVector(0, 0); // Kernel sum for this pixel
-        PVector n0 = normals[pos0];
-        for (int ky = -k; ky <= k; ky++) {
-          for (int kx = -k; kx <= k; kx++) {
-            int pos = (y + ky) * w + (x + kx);
-            sum.add(take.normals[pos]);
-          }
-        }
-        sum.mult(1.0 / sq(2*k+1));
-        
-        n0.sub(sum);
-      }
-    }
-  }
 }
 
 class DownsampleFlowStep extends CalculationStep
@@ -160,11 +158,13 @@ class DownsampleFlowStep extends CalculationStep
   float[] flowAngle;
   float[] flowMag;
   
-  final int s = 16;
+  // Downsample factor
+  final int d = 16;
   
+  // Flows above this are ignored when aggregating
   final float maxThreshold = 0.1;
   
-  int ws, hs;
+  int wd, hd;
   
   public DownsampleFlowStep(FlowStep below)
   {
@@ -172,63 +172,61 @@ class DownsampleFlowStep extends CalculationStep
     this.below = below;
   }
   
-  public void setTake(Take take)
+  public void allocateResources()
   {
-    super.setTake(take);
-    ws = w/s;
-    hs = h/s;
-    flowAngle = new float[ws * hs];
-    flowMag = new float[ws * hs];
-  }
-  
-  void drawImpl()
-  {
-    int d = 1;
-    below.draw();
-    pushMatrix();
-    translate(0.5 + s/2, 0.5 + s/2);
-    scale(s, s);
-    stroke(color(0, 0, 255));
-    strokeWeight(d / 20.0);
-    for (int y = screenStartY() / s; y < screenEndY() / s; y += d) {
-      for (int x = screenStartX() / s; x < screenEndX() / s; x += d)
-      {
-        float angle = flowAngle[y*ws + x];
-        float mag = flowMag[y*ws + x];
-        float dx = cos(angle) * d * mag;
-        float dy = sin(angle) * d * mag;
-        line(x - dx * 10, y - dy * 10, x + dx * 10, y + dy * 10);
-        line(x - dy, y + dx, x + dy, y - dx);
-      }
-    }
-    popMatrix();
+    wd = w/d;
+    hd = h/d;
+    flowAngle = new float[wd * hd];
+    flowMag = new float[wd * hd];
   }
   
   public void calculateImpl()
   {
     below.calculate();
-    for (int y = 0; y < hs; y += 1) {
-      for (int x = 0; x < ws; x += 1)
+    for (int y = 0; y < hd; y += 1) {
+      for (int x = 0; x < wd; x += 1)
       {
-        int pos0 = y * ws + x;
+        int pos0 = y * wd + x;
         PVector sum = new PVector(0, 0);
-        for (int ky = 0; ky <= s; ky++) {
-          for (int kx = 0; kx <= s; kx++) {
-            int pos = (y*s + ky) * w + (x*s + kx);
+        for (int ky = 0; ky <= d; ky++) {
+          for (int kx = 0; kx <= d; kx++) {
+            int pos = (y*d + ky) * w + (x*d + kx);
             if (below.flowMag[pos] < maxThreshold) {
               PVector add = PVector.fromAngle(below.flowAngle[pos]);
               if (sum.dot(add) < 0) {
                 add.mult(-1);
               }
-              add.mult(1.0/sq(s));
+              add.mult(1.0/sq(d));
               sum.add(add);
             }
           }
         }
         
         flowAngle[pos0] = sum.heading();
-        flowMag[pos0] = sum.mag() / s;
+        flowMag[pos0] = sum.mag() / d;
       }
     }
+  }
+  
+  void drawImpl()
+  {
+    below.draw();
+    pushMatrix();
+    translate(d/2, d/2);
+    scale(d, d);
+    stroke(color(0, 0, 255));
+    strokeWeight(1 / 20.0);
+    for (int y = screenStartY() / d; y < screenEndY() / d; y++) {
+      for (int x = screenStartX() / d; x < screenEndX() / d; x++)
+      {
+        float angle = flowAngle[y*wd + x];
+        float mag = flowMag[y*wd + x];
+        float dx = cos(angle) * mag;
+        float dy = sin(angle) * mag;
+        line(x - dx * 10, y - dy * 10, x + dx * 10, y + dy * 10);
+        line(x - dy, y + dx, x + dy, y - dx);
+      }
+    }
+    popMatrix();
   }
 }
