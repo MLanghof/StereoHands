@@ -35,11 +35,11 @@ abstract class Step
     return floor(constrain(-panY / zoom, 0, h));
   }
   
-  public float screenEndX() {
+  public int screenEndX() {
     return ceil(constrain((width - panX) / zoom, 0, w));
   }
   
-  public float screenEndY() {
+  public int screenEndY() {
     return ceil(constrain((height - panY) / zoom, 0, h));
   }
   
