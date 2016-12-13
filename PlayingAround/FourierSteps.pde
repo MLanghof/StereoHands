@@ -2,12 +2,16 @@
 // Window size of dct sampling
 final int s = 16;
 
-final float maxRidgeInterval = 7; // Maximum distance between ridge tops that is considered a ridge
+final float maxRidgeInterval = 7; // Maximum pixel distance between ridge tops that is considered a ridge
 final float minRidgeFrequency = 1.0 / maxRidgeInterval;
 // s / 2 periods in s -> f = 1/2    -> mag = s;
 // 1 / 2 periods in s -> f = 1/(2s) -> mag = 1;
 // -> mag = f * 2s
 final float minDctMag = minRidgeFrequency * 2 * s;
+
+final float minRidgeInterval = 2 * sqrt(2);
+final float maxRidgeFrequency = 1.0 / minRidgeInterval;
+final float maxDctMag = maxRidgeFrequency * 2 * s;
 
 // This is necessary to actually load the OpenCV library
 OpenCV cv = new OpenCV(this, s, s);
@@ -24,7 +28,7 @@ class DctStep extends CalculationStep
     super(null); // Polymorphy is fun >_>
     setTake(below.take);
   }
-  
+   //<>//
   public void setTake(Take take)
   {
     super.setTake(take);
@@ -111,8 +115,8 @@ class FlowFromDctStep extends CalculationStep
       {
         float angle = flowAngle[y*wd + x];
         float mag = flowMag[y*wd + x];
-        float dx = cos(angle) * mag / 10;
-        float dy = sin(angle) * mag / 10;
+        float dx = cos(angle) * mag / 5;
+        float dy = sin(angle) * mag / 5;
         line(x - dx * 10, y - dy * 10, x + dx * 10, y + dy * 10);
         line(x - dy, y + dx, x + dy, y - dx);
       }
@@ -136,9 +140,11 @@ class FlowFromDctStep extends CalculationStep
             color c = below.frequencies.pixels[pos];
             if (c == color(255, 0, 0)) continue;
             PVector v = new PVector(xs, ys - s/2);
-            if (v.mag() <= minRidgeFrequency) continue;
-            if (red(c) > max) {
-              max = red(c);
+            if (v.mag() <= minDctMag) continue;
+            if (v.mag() >= maxDctMag) continue;
+            float strength = red(c) * sqrt(v.mag() / s);
+            if (strength > max) {
+              max = strength;
               maxLoc = v;
             }
           }
