@@ -54,13 +54,12 @@ class DftStep extends CalculationStep
         // Yeah, I lied. It's a DFT.
         Core.dft(subMat, outComplex, Core.DFT_COMPLEX_OUTPUT, 0);
         
-        float dc = mag((float)outComplex.get(0, 0)[0], (float)outComplex.get(0, 0)[1]);
+        float dc = getMagnitudeAt(outComplex, 0, 0);
         for (int ys = 0; ys < s; ys++) {
           for (int xs = 0; xs < s; xs++) {
             int pos = (y * s/d + (ys + s/2) % s) * w * s/d + x * s/d + (xs + s/2) % s;
-            double[] tmp = outComplex.get(ys, xs);
-            float mag = mag((float)tmp[0], (float)tmp[1]);
-            frequencies.pixels[pos] = color(sqrt(mag / dc) * 255);
+            float mag = getMagnitudeAt(outComplex, xs, ys);
+            frequencies.pixels[pos] = color(mag / dc * 255);
           }
         }
         frequencies.pixels[(y * s/d + s/2) * w * s/d + x * s/d + s/2] = color(255, 0, 0);
@@ -68,6 +67,15 @@ class DftStep extends CalculationStep
       }
       frequencies.updatePixels();
     }
+  }
+  
+  float getMagnitudeAt(Mat mat, int x, int y)
+  {
+    double[] tmp = mat.get(y, x);
+    float magnitude = mag((float)tmp[0], (float)tmp[1]);
+    float centerDistance = mag(((x + s/2) % s) - s/2, ((y + s/2) % s) - s/2) / (s/2);
+    if (centerDistance == 0) centerDistance = 1;
+    return sqrt(magnitude * centerDistance); 
   }
   
   void drawImpl()
@@ -126,7 +134,7 @@ class FlowFromDftStep extends CalculationStep
             PVector v = new PVector(xs - s/2, ys - s/2);
             if (v.mag() <= minDctMag) continue;
             if (v.mag() >= maxDctMag) continue;
-            float strength = red(c) * sqrt(v.mag() / s);
+            float strength = red(c) / 2;// * sqrt(v.mag() / s);
             if (strength > max) {
               max = strength;
               maxLoc = v;
