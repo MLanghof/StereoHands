@@ -174,8 +174,8 @@ class DownsampleFlowStep extends CalculationStep
   
   public void allocateResources()
   {
-    wd = w/d;
-    hd = h/d;
+    wd = (w-1)/d;
+    hd = (h-1)/d;
     flowAngle = new float[wd * hd];
     flowMag = new float[wd * hd];
   }
@@ -216,8 +216,8 @@ class DownsampleFlowStep extends CalculationStep
     scale(d, d);
     stroke(color(0, 0, 255));
     strokeWeight(1 / 20.0);
-    for (int y = screenStartY() / d; y < screenEndY() / d; y++) {
-      for (int x = screenStartX() / d; x < screenEndX() / d; x++)
+    for (int y = screenStartY() / d; y < min(screenEndY() / d, hd); y++) {
+      for (int x = screenStartX() / d; x < min(screenEndX() / d, wd); x++)
       {
         float angle = flowAngle[y*wd + x];
         float mag = flowMag[y*wd + x];

@@ -141,7 +141,7 @@ class Take
         }
       }
     }
-    println(minX, minY, maxX, maxY);
+    println("ROI of take: [", minX, ",", minY, "] - [", maxX, ",", maxY, "]");
     return new Rectangle(minX, minY, maxX - minX, maxY - minY);
   }
   

@@ -3,13 +3,15 @@
 final int s = 16;
 
 final float maxRidgeInterval = 7; // Maximum pixel distance between ridge tops that is considered a ridge
+final float minRidgeInterval = 2;// * sqrt(2); // Minimum...
+
+
 final float minRidgeFrequency = 1.0 / maxRidgeInterval;
 // s / 2 periods in s -> f = 1/2    -> mag = s;
 // 1 / 2 periods in s -> f = 1/(2s) -> mag = 1;
 // -> mag = f * 2s
 final float minDctMag = minRidgeFrequency * s;
 
-final float minRidgeInterval = 2 * sqrt(2);
 final float maxRidgeFrequency = 1.0 / minRidgeInterval;
 final float maxDctMag = maxRidgeFrequency * s;
 
@@ -91,6 +93,9 @@ class FlowFromDftStep extends CalculationStep
     super(below.take);
     this.below = below;
     d = below.d;
+    
+    println("Minimum DCT center distance: ", minDctMag);
+    println("Maximum DCT center distance: ", maxDctMag); 
   }
   
   public void allocateResources()
@@ -131,8 +136,11 @@ class FlowFromDftStep extends CalculationStep
         
         flowAngle[y * wd + x] = maxLoc.heading() + HALF_PI;
         flowMag[y * wd + x] = maxLoc.mag() * d/s * max / 255.0;
+        int posBelow = (y*s + (int)(maxLoc.y + s/2)) * w * s/d + x*s + (int)(maxLoc.x + s/2);
+        below.frequencies.pixels[posBelow] = color(0, red(below.frequencies.pixels[posBelow]), 0);
       }
     }
+    below.frequencies.updatePixels();
   }
   
   void drawImpl()
