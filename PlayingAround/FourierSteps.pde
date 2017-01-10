@@ -2,8 +2,8 @@
 // Window size of dct sampling
 final int s = 16;
 
-final float maxRidgeInterval = 7; // Maximum pixel distance between ridge tops that is considered a ridge
-final float minRidgeInterval = 2;// * sqrt(2); // Minimum...
+final float maxRidgeInterval = 6; // Maximum pixel distance between ridge tops that is considered a ridge
+final float minRidgeInterval = 2; // * sqrt(2); // Minimum...
 
 
 final float minRidgeFrequency = 1.0 / maxRidgeInterval;
