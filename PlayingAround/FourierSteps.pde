@@ -46,7 +46,7 @@ class DftStep extends CalculationStep
         for (int ys = 0; ys < s; ys++) {
           for (int xs = 0; xs < s; xs++) {
             int pos = (y + ys) * w + x + xs;
-            subMat.put(ys, xs, take.shapeIndex.pixels[pos]);
+            subMat.put(ys, xs, red(take.shapeIndex.pixels[pos]));
           }
         }
         Mat outComplex = new Mat();
@@ -73,9 +73,8 @@ class DftStep extends CalculationStep
   {
     double[] tmp = mat.get(y, x);
     float magnitude = mag((float)tmp[0], (float)tmp[1]);
-    float centerDistance = mag(((x + s/2) % s) - s/2, ((y + s/2) % s) - s/2) / (s/2);
-    if (centerDistance == 0) centerDistance = 1;
-    return sqrt(magnitude * centerDistance); 
+    // Rescale for easier visibility
+    return sqrt(sqrt(magnitude)); 
   }
   
   void drawImpl(PGraphics g)

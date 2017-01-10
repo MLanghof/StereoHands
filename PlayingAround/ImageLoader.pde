@@ -80,7 +80,7 @@ class Take
     roi = getRoi(shapeIndex);
     shapeIndex = shapeIndex.get(roi.x, roi.y, roi.width, roi.height);
     albedo = loadAlbedo(folderPath + "/a.mat");
-    normals = loadNormals(folderPath);
+    //normals = loadNormals(folderPath);
   }
   
   public PImage loadAlbedo(String path)

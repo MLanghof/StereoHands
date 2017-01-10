@@ -37,6 +37,7 @@ class HandProcessor
     stepSelector.add(new FlowFromDftStep(dctStep));
     stepSelector.add(new FullDftStep(shapeIndexStep));
     stepSelector.add(new FullDctStep(shapeIndexStep));
+    stepSelector.add(new FlowFinder(shapeIndexStep));
   }
 
   public PImage getCurrentImage()

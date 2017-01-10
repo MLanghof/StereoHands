@@ -67,11 +67,12 @@ void zoom(float distance)
   zoom = newZoom;
 }
 
-
 void mouseDragged()
 {
-  panX -= pmouseX - mouseX;
-  panY -= pmouseY - mouseY;
+  if (mouseButton == LEFT) {
+    panX -= pmouseX - mouseX;
+    panY -= pmouseY - mouseY;
+  }
   redraw();
 }
 
@@ -80,6 +81,17 @@ void keyPressed()
   if (key == ' ') {
     saveOutput();
   }
+  redraw();
+}
+
+void keyReleased()
+{
+  redraw();
+}
+
+void mouseReleased()
+{
+  redraw();
 }
 
 void saveOutput()

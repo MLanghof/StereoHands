@@ -32,20 +32,28 @@ abstract class Step
     return (sx > 0 && sx < g.width && sy > 0 && sy < g.height);
   }
   
+  public float imageX(float x) {
+    return (x - panX) / zoom;
+  }
+  
+  public float imageY(float y) {
+    return (y - panY) / zoom;
+  }
+  
   public int screenStartX() {
-    return floor(constrain(-panX / zoom, 0, w));
+    return floor(constrain(imageX(0), 0, w));
   }
   
   public int screenStartY() {
-    return floor(constrain(-panY / zoom, 0, h));
+    return floor(constrain(imageY(0), 0, h));
   }
   
   public int screenEndX() {
-    return ceil(constrain((width - panX) / zoom, 0, w));
+    return ceil(constrain(imageX(width), 0, w));
   }
   
   public int screenEndY() {
-    return ceil(constrain((height - panY) / zoom, 0, h));
+    return ceil(constrain(imageY(height), 0, h));
   }
   
   public String toString()
