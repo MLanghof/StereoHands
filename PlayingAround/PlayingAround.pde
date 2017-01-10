@@ -84,5 +84,5 @@ void keyPressed()
 
 void saveOutput()
 {
-  
+  processor.saveImage();
 }

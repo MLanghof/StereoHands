@@ -78,10 +78,10 @@ class DftStep extends CalculationStep
     return sqrt(magnitude * centerDistance); 
   }
   
-  void drawImpl()
+  void drawImpl(PGraphics g)
   {
-    scale((float)d / s);
-    image(frequencies, 0, 0);
+    g.scale((float)d / s);
+    g.image(frequencies, 0, 0);
   }
 }
 
@@ -151,15 +151,15 @@ class FlowFromDftStep extends CalculationStep
     below.frequencies.updatePixels();
   }
   
-  void drawImpl()
+  void drawImpl(PGraphics g)
   {
-    //below.draw();
-    image(take.shapeIndex, 0, 0);
-    pushMatrix();
-    translate(d/2, d/2);
-    scale(d, d);
-    stroke(color(255, 0, 0));
-    strokeWeight(1 / 10.0);
+    //below.drawOn(g);
+    g.image(take.shapeIndex, 0, 0);
+    g.pushMatrix();
+    g.translate(d/2, d/2);
+    g.scale(d, d);
+    g.stroke(color(255, 0, 0));
+    g.strokeWeight(1 / 10.0);
     for (int y = screenStartY() / d; y * d < screenEndY(); y++) {
       for (int x = screenStartX() / d; x * d < screenEndX(); x++)
       {
@@ -168,11 +168,11 @@ class FlowFromDftStep extends CalculationStep
         float mag = flowMag[y*wd + x];
         float dx = cos(angle) * mag / 5;
         float dy = sin(angle) * mag / 5;
-        line(x - dx * 10, y - dy * 10, x + dx * 10, y + dy * 10);
-        line(x - dy, y + dx, x + dy, y - dx);
+        g.line(x - dx * 10, y - dy * 10, x + dx * 10, y + dy * 10);
+        g.line(x - dy, y + dx, x + dy, y - dx);
       }
     }
-    popMatrix();
+    g.popMatrix();
   }
 }
 
@@ -238,9 +238,9 @@ class FullDftStep extends CalculationStep
     frequencies.updatePixels();
   }
   
-  void drawImpl()
+  void drawImpl(PGraphics g)
   {
-    image(frequencies, 0, 0);
+    g.image(frequencies, 0, 0);
   }
 }
 
@@ -297,8 +297,8 @@ class FullDctStep extends CalculationStep
     frequencies.updatePixels();
   }
   
-  void drawImpl()
+  void drawImpl(PGraphics g)
   {
-    image(frequencies, 0, 0);
+    g.image(frequencies, 0, 0);
   }
 }

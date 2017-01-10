@@ -59,14 +59,14 @@ class FlowStep extends CalculationStep
     }
   }
   
-  void drawImpl()
+  void drawImpl(PGraphics g)
   {
     int d = 1;
-    below.draw();
-    pushMatrix();
-    translate(0.5, 0.5);
-    stroke(color(0, 0, 255));
-    strokeWeight(d / 20.0);
+    below.drawOn(g);
+    g.pushMatrix();
+    g.translate(0.5, 0.5);
+    g.stroke(color(0, 0, 255));
+    g.strokeWeight(d / 20.0);
     for (int y = screenStartY(); y < screenEndY(); y += d) {
       for (int x = screenStartX(); x < screenEndX(); x += d)
       {
@@ -74,11 +74,11 @@ class FlowStep extends CalculationStep
         float mag = flowMag[y*w + x];
         float dx = cos(angle) * d * mag;
         float dy = sin(angle) * d * mag;
-        line(x - dx * 10, y - dy * 10, x + dx * 10, y + dy * 10);
-        line(x - dy, y + dx, x + dy, y - dx);
+        g.line(x - dx * 10, y - dy * 10, x + dx * 10, y + dy * 10);
+        g.line(x - dy, y + dx, x + dy, y - dx);
       }
     }
-    popMatrix();
+    g.popMatrix();
   }
 }
 
@@ -127,14 +127,14 @@ class SmoothNormalsStep extends CalculationStep
     }
   }
   
-  public void drawImpl()
+  public void drawImpl(PGraphics g)
   {
     int d = 1;
-    //below.draw();
-    pushMatrix();
-    translate(0.5, 0.5);
-    stroke(color(255, 170, 0));
-    strokeWeight(d / 20.0);
+    //below.drawOn(g);
+    g.pushMatrix();
+    g.translate(0.5, 0.5);
+    g.stroke(color(255, 170, 0));
+    g.strokeWeight(d / 20.0);
     
     println(screenStartY(), screenEndY(), screenStartX(), screenEndX());
     for (int y = screenStartY(); y < screenEndY(); y += d) {
@@ -143,11 +143,11 @@ class SmoothNormalsStep extends CalculationStep
         PVector n = normals[y*w + x];
         float dx = n.x * d;
         float dy = n.y * d;
-        line(x, y, x + dx * 8, y + dy * 8);
-        line(x - dy, y + dx, x + dy, y - dx);
+        g.line(x, y, x + dx * 8, y + dy * 8);
+        g.line(x - dy, y + dx, x + dy, y - dx);
       }
     }
-    popMatrix();
+    g.popMatrix();
   }
 }
 
@@ -208,14 +208,14 @@ class DownsampleFlowStep extends CalculationStep
     }
   }
   
-  void drawImpl()
+  void drawImpl(PGraphics g)
   {
-    below.draw();
-    pushMatrix();
-    translate(d/2, d/2);
-    scale(d, d);
-    stroke(color(0, 0, 255));
-    strokeWeight(1 / 20.0);
+    below.drawOn(g);
+    g.pushMatrix();
+    g.translate(d/2, d/2);
+    g.scale(d, d);
+    g.stroke(color(0, 0, 255));
+    g.strokeWeight(1 / 20.0);
     for (int y = screenStartY() / d; y < min(screenEndY() / d, hd); y++) {
       for (int x = screenStartX() / d; x < min(screenEndX() / d, wd); x++)
       {
@@ -223,10 +223,10 @@ class DownsampleFlowStep extends CalculationStep
         float mag = flowMag[y*wd + x];
         float dx = cos(angle) * mag;
         float dy = sin(angle) * mag;
-        line(x - dx * 10, y - dy * 10, x + dx * 10, y + dy * 10);
-        line(x - dy, y + dx, x + dy, y - dx);
+        g.line(x - dx * 10, y - dy * 10, x + dx * 10, y + dy * 10);
+        g.line(x - dy, y + dx, x + dy, y - dx);
       }
     }
-    popMatrix();
+    g.popMatrix();
   }
 }

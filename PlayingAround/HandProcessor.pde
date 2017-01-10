@@ -62,6 +62,22 @@ class HandProcessor
     }
   }
   
+  int outCount = 0;
+  
+  public void saveImage()
+  {
+    if (inStepUI()) {
+      Step currentStep = stepSelector.getCurrent();
+      int s = 2;
+      PGraphics pg = createGraphics(currentStep.w * s, currentStep.h * s);
+      pg.beginDraw();
+      pg.scale(s);
+      currentStep.drawOn(pg);
+      pg.endDraw();
+      pg.save("out" + outCount++ + ".png");
+    }
+  }
+  
   public void handleClick(int x, int y)
   {
     uiSelector.handleClick(x, y);

@@ -11,7 +11,12 @@ abstract class Step
     setTake(take);    
   }
   
-  abstract public void draw();
+  public final void draw()
+  {
+    drawOn(g);
+  }
+  
+  abstract public void drawOn(PGraphics g);
   
   public void setTake(Take take)
   {
@@ -20,11 +25,11 @@ abstract class Step
     w = take.roi.width;
   }
   
-  public boolean onScreen(float x, float y)
+  public boolean onScreen(float x, float y, PGraphics g)
   {
-    float sx = screenX(x, y);
-    float sy = screenY(x, y);
-    return (sx > 0 && sx < width && sy > 0 && sy < height);
+    float sx = g.screenX(x, y);
+    float sy = g.screenY(x, y);
+    return (sx > 0 && sx < g.width && sy > 0 && sy < g.height);
   }
   
   public int screenStartX() {
@@ -67,15 +72,15 @@ abstract class CalculationStep extends Step
     super(take);
   }
   
-  public void draw()
+  public void drawOn(PGraphics g)
   {
     if (!calculated) {
       calculate();
     }
-    drawImpl();
+    drawImpl(g);
   }
   
-  abstract public void drawImpl();
+  abstract public void drawImpl(PGraphics g);
   
   public void calculate()
   {
@@ -105,9 +110,9 @@ class ShapeIndexStep extends InputStep
     super(take);
   }
   
-  public void draw()
+  public void drawOn(PGraphics g)
   {
-    image(take.shapeIndex, 0, 0);
+    g.image(take.shapeIndex, 0, 0);
   }
 }
 
@@ -118,9 +123,9 @@ class AlbedoStep extends InputStep
     super(take);
   }
   
-  public void draw()
+  public void drawOn(PGraphics g)
   {
-    image(take.albedo, 0, 0);
+    g.image(take.albedo, 0, 0);
   }
 }
 
@@ -131,24 +136,24 @@ class NormalsStep extends InputStep
     super(take);
   }
   
-  public void draw()
+  public void drawOn(PGraphics g)
   {
-    image(take.shapeIndex, 0, 0);
+    g.image(take.shapeIndex, 0, 0);
     int d = 1;
-    pushMatrix();
-    translate(0.5, 0.5);
-    stroke(color(255, 0, 0));
-    strokeWeight(d / 20.0);
+    g.pushMatrix();
+    g.translate(0.5, 0.5);
+    g.stroke(color(255, 0, 0));
+    g.strokeWeight(d / 20.0);
     for (int y = 0; y < h; y+=d) {
       for (int x = 0; x < w; x+=d) {
-        if (!onScreen(x, y)) continue;
+        if (!onScreen(x, y, g)) continue;
         PVector n = take.normals[y*w + x];
         float dx = n.x * d / 5;
         float dy = n.y * d / 5;
-        line(x, y, x + dx * 8, y + dy * 8);
-        line(x - dy, y + dx, x + dy, y - dx);
+        g.line(x, y, x + dx * 8, y + dy * 8);
+        g.line(x - dy, y + dx, x + dy, y - dx);
       }
     }
-    popMatrix();
+    g.popMatrix();
   }
 }
