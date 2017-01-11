@@ -83,6 +83,66 @@ class RidgeDetector
     double[] tmp = mat.get(y, x);
     return mag((float)tmp[0], (float)tmp[1]);
   }
+  
+  Mat eliminateRidgeAt(int x, int y)
+  {
+    complexMat = getFrequencySpaceAt(x, y);
+    Ridge ridge = findPotentialRidge(complexMat, true);
+    return eliminateRidge(complexMat, ridge);
+  }
+
+  Mat eliminateRidge(Mat complexMat, Ridge ridge)
+  {
+    int maxX = ((int)ridge.fx() + s) % s;
+    int maxY = ((int)ridge.fy() + s) % s;
+    
+    // Radius of frequency area to clear.
+    int sp = 1;
+    // This may wrap a bit more than intended but it's no big deal
+    for (int y = maxY-sp; y <= maxY+sp; y++) {
+      for (int x = maxX-sp; x <= maxX+sp; x++) {
+        if ((((x+s)%s) == 0) && (((y+s)%s) == 0)) continue;
+        complexMat.put((y+s)%s, (x+s)%s, 0.0, 0.0);
+        complexMat.put((s-y)%s, (s-x)%s, 0.0, 0.0);
+      }
+    }
+    // Invert
+    Mat newMat = new Mat();
+    Core.dft(complexMat, newMat, Core.DFT_INVERSE | Core.DFT_SCALE, 0);
+    return newMat;
+  }
+  
+  Mat isolateRidgeAt(int x, int y)
+  {
+    complexMat = getFrequencySpaceAt(x, y);
+    Ridge ridge = findPotentialRidge(complexMat, true);
+    return isolateRidge(complexMat, ridge);
+  }
+
+  Mat isolateRidge(Mat complexMat, Ridge ridge)
+  {
+    int maxX = ((int)ridge.fx() + s) % s;
+    int maxY = ((int)ridge.fy() + s) % s;
+    
+    // Radius of frequency area to retain.
+    int sp = 1;
+    Mat newComplexMat = Mat.zeros(complexMat.size(), complexMat.type());
+    for (int y = maxY-sp; y <= maxY+sp; y++) {
+      for (int x = maxX-sp; x <= maxX+sp; x++) {
+        double[] data = complexMat.get((y+s)%s, (x+s)%s);
+        newComplexMat.put((y+s)%s, (x+s)%s, data);
+        // Complex conjugate
+        data[1] = -data[1];
+        newComplexMat.put((s-y)%s, (s-x)%s, data);
+      }
+    }
+    // Transfer dc
+    newComplexMat.put(0, 0, complexMat.get(0, 0));
+    // Invert
+    Mat newMat = new Mat();
+    Core.dft(newComplexMat, newMat, Core.DFT_INVERSE | Core.DFT_SCALE, 0);
+    return newMat;
+  }
 }
 
 class Ridge extends PVector

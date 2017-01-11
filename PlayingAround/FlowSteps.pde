@@ -9,7 +9,7 @@ class FlowFinder extends CalculationStep
 
 
   // Kernel is applied with this spacing
-  int d = 2;
+  final int d = 2;
 
   int wd, hd;
 
@@ -67,6 +67,71 @@ class FlowFinder extends CalculationStep
     }
   }
 }
+
+
+class RidgeManipulatorStep extends CalculationStep
+{
+  RidgeDetector ridger;
+  
+  PImage modified;
+  
+  boolean ridgesOnly = true;
+
+  // Kernel is applied with this spacing
+  // d=1 is almost indistinguishable but way more work than d=2
+  final int d = 2;
+  
+  final int s;
+  
+  int wd, hd;
+  
+  public RidgeManipulatorStep(Step below)
+  {
+    super(below.take);
+    ridger = new RidgeDetector();
+    ridger.input = this;
+    s = ridger.s;
+  }
+
+  public void allocateResources()
+  {
+    wd = (w - s) / d;
+    hd = (h - s) / d;
+    modified = createImage(w, h, RGB);
+  }
+  
+  public void calculateImpl()
+  {
+    modified.loadPixels();
+    for (int yd = 0; yd < hd; yd++) {
+      for (int xd = 0; xd < wd; xd++)
+      {
+        int x = xd*d + s/2;
+        int y = yd*d + s/2;
+        Mat out;
+        if (ridgesOnly) {
+          out = ridger.isolateRidgeAt(x, y);
+        } else {
+          out = ridger.eliminateRidgeAt(x, y);
+        }
+        
+        for (int ydd = 0; ydd < d; ydd++) {
+          for (int xdd = 0; xdd < d; xdd++) {
+            int pos = (y + ydd) * w + x + xdd;
+            modified.pixels[pos] = color(ridger.getAmplitudeAt(out, xdd + s/2, ydd + s/2));
+          }
+        }
+      }
+    }
+    modified.updatePixels();
+  }
+  
+  void drawImpl(PGraphics g)
+  {
+    g.image(modified, 0, 0);
+  }
+}
+
 
 class FlowStep extends CalculationStep
 {

@@ -40,6 +40,7 @@ class HandProcessor
     stepSelector.add(new FullDftStep(shapeIndexStep));
     stepSelector.add(new FullDctStep(shapeIndexStep));
     stepSelector.add(new FlowFinder(shapeIndexStep));
+    stepSelector.add(new RidgeManipulatorStep(shapeIndexStep));
     
     mouseover = new Mouseover(currentTake);
   }
@@ -155,16 +156,15 @@ class Mouseover extends Step
     int imgY = (int)imageY(mouseY);
     if (imgX < s/2 || imgY < s/2 || imgX >= w-s/2 || imgY >= h-s/2) return;
 
-    Mat complexMat = ridger.getFrequencySpaceAt(imgX, imgY);
-
     if (keyPressed && (keyCode == KeyEvent.VK_SHIFT))
     {
-      Mat newMat = eliminateMainFrequency(complexMat);
+      Mat newMat = ridger.eliminateRidgeAt(imgX, imgY);
       fillMouseImage(newMat);
       g.image(mouseDetail, imgX-s/2, imgY-s/2);
     }
     else
     {
+      Mat complexMat = ridger.getFrequencySpaceAt(imgX, imgY);
       Ridge ridge = ridger.findPotentialRidge(complexMat, true);
       fillMouseImageDC(complexMat, ridge);
       float dc = ridger.getAmplitudeAt(complexMat, 0, 0);
@@ -174,9 +174,11 @@ class Mouseover extends Step
       g.translate(mouseX, mouseY);
       g.scale(2);
       g.fill(255);
-      g.text("Amplitude:" + ridge.strength + "\nRelative:" + ridge.strength/dc + "\nRescaled:" + rescaleAmplitude(ridge.strength/dc), 4, -61);
+      String text = "Amplitude:" + ridge.strength + "\nRelative:" + ridge.strength/dc + "\nRescaled:" + rescaleAmplitude(ridge.strength/dc);
+      text += "\nx:" + ridge.x + "\ny:" + ridge.y;
+      g.text(text, 4, -61);
       g.fill(0);
-      g.text("Amplitude:" + ridge.strength + "\nRelative:" + ridge.strength/dc + "\nRescaled:" + rescaleAmplitude(ridge.strength/dc), 5, -60);
+      g.text(text, 5, -60);
       g.scale(1.0/2);
       int scale = 8;
       g.scale(scale);
@@ -192,27 +194,6 @@ class Mouseover extends Step
       g.ellipse(0, 0, 2*maxDctMag, 2*maxDctMag);
       g.popMatrix();
     }
-  }
-
-  Mat eliminateMainFrequency(Mat complexMat)
-  {
-    Ridge ridge = ridger.findPotentialRidge(complexMat, true);
-    int maxX = ((int)ridge.fx() + s) % s;
-    int maxY = ((int)ridge.fy() + s) % s;
-    
-    // Radius of frequency area to clear.
-    int sp = 2;
-    for (int y = max(maxY-sp, 0); y < min(maxY+sp+1, s); y++) {
-      for (int x = max(maxX-sp, 0); x < min(maxX+sp+1, s); x++) {
-        if ((x == 0) && (y == 0)) continue; 
-        complexMat.put(y, x, 0.0, 0.0);
-        complexMat.put(s-y, s-x, 0.0, 0.0);
-      }
-    }
-    // Invert
-    Mat newMat = new Mat();
-    Core.dft(complexMat, newMat, Core.DFT_INVERSE | Core.DFT_SCALE, 0);
-    return newMat;
   }
 
   void fillMouseImageDC(Mat mat, Ridge ridge)

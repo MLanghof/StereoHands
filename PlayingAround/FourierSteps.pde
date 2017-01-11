@@ -2,7 +2,8 @@
 // Window size of dct sampling
 final int s = 16;
 
-final float maxRidgeInterval = 6; // Maximum pixel distance between ridge tops that is considered a ridge
+// TODO: This is debatable, 6 is also a good idea at times
+final float maxRidgeInterval = 5.65; // Maximum pixel distance between ridge tops that is considered a ridge
 final float minRidgeInterval = 2; // * sqrt(2); // Minimum...
 
 
@@ -23,7 +24,7 @@ class DftStep extends CalculationStep
   PImage frequencies;
   
   // Spacing between DCTs.
-  int d = 4;
+  final int d = 4;
   
   public DftStep(Step below)
   {
