@@ -18,6 +18,10 @@ class FlowFinder extends CalculationStep
 
   // Graphics buffer for mouse highlight
   PImage mouseDetail;
+  
+  boolean eliminateLowStrength = true; 
+  // Amplitude threshold for accepting a maximum strength amplitude as ridge.
+  float minRidgeStrength = 1500;
 
   public FlowFinder(Step below)
   {
@@ -36,23 +40,38 @@ class FlowFinder extends CalculationStep
 
   public void calculateImpl()
   {
-    subMat = new Mat(s, s, CvType.CV_32FC1);
     Mat complexMat = new Mat();
+    PVector complexF = new PVector(0, 0);
     for (int y = 0; y < hd; y++) {
       for (int x = 0; x < wd; x++)
       {
-        fillSubmatAround(x * d + s/2, y * d + s/2, subMat);
+        complexMat = getFrequencySpaceAt(x*d + s/2, y*d + s/2);
+        PVector maximum = findMainFrequency(complexMat, true);
+        complexF.x = maximum.x;
+        complexF.y = maximum.y;
+        // TODO: If there's a stronger signal with lower than allowed frequency, check if it's in the same direction
+        //         if yes: discard (just harmonics of a wrinkle or main line)
+        
+        float mag = complexF.mag();
+        
+        if (eliminateLowStrength && (maximum.z < minRidgeStrength)) mag = 0;
 
-        Core.dft(subMat, complexMat, Core.DFT_COMPLEX_OUTPUT, 0);
-
-        PVector maxLoc = evaluateSubmat(complexMat);
-
-        flowAngle[y * wd + x] = maxLoc.heading() + HALF_PI;
-        flowMag[y * wd + x] = maxLoc.mag() * d/s;
+        // Heading assumes a 2D vector so discards the strength in z
+        flowAngle[y * wd + x] = complexF.heading() + HALF_PI;
+        flowMag[y * wd + x] = mag * d/s;
       }
     }
   }
-
+  
+  Mat getFrequencySpaceAt(int x, int y)
+  {
+    fillSubmatAround(x, y, subMat);
+    Mat frequencyMat = new Mat();
+    Core.dft(subMat, frequencyMat, Core.DFT_COMPLEX_OUTPUT, 0);
+    return frequencyMat;
+  }
+  
+  // Assumes the subMat to be properly set up.
   void fillSubmatAround(int x, int y, Mat subMat)
   {
     for (int ys = -s/2; ys < s/2; ys++) {
@@ -62,21 +81,24 @@ class FlowFinder extends CalculationStep
       }
     }
   }
-
-  PVector evaluateSubmat(Mat subMat)
+  
+  // Returns the (eligible) complex frequency of maximum magnitude as a PVector,
+  // with the amplitude as z component.
+  PVector findMainFrequency(Mat mat, boolean boundsCheck)
   {
-    float dc = (float)subMat.get(0, 0)[0];
-
     float maxStrength = 0;
     PVector maxLoc = new PVector();
 
     for (int ys = 0; ys < s; ys++) {
-      for (int xs = 0; xs < s; xs++) {
+      for (int xs = 0; xs < s; xs++)
+      {
+        if ((xs == 0) && (ys == 0)) continue; // Not interested in dc component
+        
         PVector complexF = new PVector((xs + s/2) % s - s/2, (ys + s/2) % s - s/2);
-        if (complexF.mag() <= minDctMag) continue;
-        if (complexF.mag() >= maxDctMag) continue;
+        if (boundsCheck && (complexF.mag() <= minDctMag)) continue;
+        if (boundsCheck && (complexF.mag() >= maxDctMag)) continue;
 
-        float strength = getMagnitudeAt(subMat, xs, ys) / dc;
+        float strength = getAmplitudeAt(mat, xs, ys);
         if (strength > maxStrength) {
           maxStrength = strength;
           maxLoc = complexF;
@@ -84,24 +106,14 @@ class FlowFinder extends CalculationStep
       }
     }
     // TODO: Aggregate nearby strength?
+    maxLoc.z = maxStrength;
     return maxLoc;
   }
 
-  float getMagnitudeAt(Mat mat, int x, int y)
+  float getAmplitudeAt(Mat mat, int x, int y)
   {
     double[] tmp = mat.get(y, x);
-    float magnitude = mag((float)tmp[0], (float)tmp[1]);
-    // Rescale for easier visibility
-    return sqrt(sqrt(magnitude));
-  }
-
-  void drawSubmat()
-  {
-  }
-
-  float getStrength(float amplitude, float frequency)
-  {
-    return sqrt(sqrt(abs(amplitude)) * frequency);
+    return mag((float)tmp[0], (float)tmp[1]);
   }
 
   void drawImpl(PGraphics g)
@@ -130,73 +142,92 @@ class FlowFinder extends CalculationStep
     }
 
     if (mousePressed && (mouseButton == RIGHT)) {
-      drawAroundMouse(g);
+      drawMouseHighlight(g);
     }
   }
 
-  void drawAroundMouse(PGraphics g)
+  void drawMouseHighlight(PGraphics g)
   {
     int imgX = (int)imageX(mouseX);
     int imgY = (int)imageY(mouseY);
     if (imgX < s/2 || imgY < s/2 || imgX >= w-s/2 || imgY >= h-s/2) return;
 
-    fillSubmatAround(imgX, imgY, subMat);
-
-    Mat complexMat = new Mat();
-    Core.dft(subMat, complexMat, Core.DFT_COMPLEX_OUTPUT, 0);
+    Mat complexMat = getFrequencySpaceAt(imgX, imgY);
 
     if (keyPressed && (keyCode == KeyEvent.VK_SHIFT))
     {
-      PVector maxLoc = evaluateSubmat(complexMat);
-      int maxX = ((int)maxLoc.x + s) % s;
-      int maxY = ((int)maxLoc.y + s) % s;
-      println(maxX, maxY);
-      
-      for (int y = max(maxY-2, 0); y < min(maxY+3, s); y++) {
-        for (int x = max(maxX-2, 0); x < min(maxX+3, s); x++) {
-          if ((x == 0) && (y == 0)) continue; 
-          complexMat.put(y, x, 0.0, 0.0);
-          complexMat.put(s-y, s-x, 0.0, 0.0);
-        }
-      }
-      // Invert
-      Mat newMat = new Mat();
-      Core.dft(complexMat, newMat, Core.DFT_INVERSE | Core.DFT_SCALE, 0);
+      Mat newMat = eliminateMainFrequency(complexMat);
       fillMouseImage(newMat);
-      
       g.image(mouseDetail, imgX-s/2, imgY-s/2);
     } else
     {
       fillMouseImageDC(complexMat);
+      PVector mainF = findMainFrequency(complexMat, true);
+      float dc = getAmplitudeAt(complexMat, 0, 0);
+      // TODO: Show selected main frequency?
       g.pushMatrix();
       g.resetMatrix();
       g.translate(mouseX, mouseY);
+      g.scale(2);
+      g.fill(255);
+      g.text("Amplitude:" + mainF.z + "\nRelative:" + mainF.z/dc + "\nRescaled:" + rescaleAmplitude(mainF.z/dc), 4, -61);
+      g.fill(0);
+      g.text("Amplitude:" + mainF.z + "\nRelative:" + mainF.z/dc + "\nRescaled:" + rescaleAmplitude(mainF.z/dc), 5, -60);
+      g.scale(1.0/2);
       int scale = 8;
       g.scale(scale);
       g.image(mouseDetail, -s, -s);
-      g.translate(-s/2 + 0.5, -s/2 + 0.5);
-      g.stroke(color(0, 200, 0, 100));
+      g.stroke(0);
       g.strokeWeight(0.1);
       g.noFill();
-      // Apparently we're using rectMode CENTER
+      g.rect(-s, -s, s, s);
+      g.translate(-s/2 + 0.5, -s/2 + 0.5);
+      g.stroke(color(0, 200, 0, 100));
+      // Apparently we're using rectMode CENTER?
       g.ellipse(0, 0, 2*minDctMag, 2*minDctMag);
       g.ellipse(0, 0, 2*maxDctMag, 2*maxDctMag);
       g.popMatrix();
     }
   }
 
+  Mat eliminateMainFrequency(Mat complexMat)
+  {
+    PVector maxLoc = findMainFrequency(complexMat, true);
+    int maxX = ((int)maxLoc.x + s) % s;
+    int maxY = ((int)maxLoc.y + s) % s;
+    
+    // Radius of frequency area to clear.
+    int sp = 2;
+    for (int y = max(maxY-sp, 0); y < min(maxY+sp+1, s); y++) {
+      for (int x = max(maxX-sp, 0); x < min(maxX+sp+1, s); x++) {
+        if ((x == 0) && (y == 0)) continue; 
+        complexMat.put(y, x, 0.0, 0.0);
+        complexMat.put(s-y, s-x, 0.0, 0.0);
+      }
+    }
+    // Invert
+    Mat newMat = new Mat();
+    Core.dft(complexMat, newMat, Core.DFT_INVERSE | Core.DFT_SCALE, 0);
+    return newMat;
+  }
+
   void fillMouseImageDC(Mat mat)
   {
     mouseDetail.loadPixels();
-    float dc = getMagnitudeAt(mat, 0, 0);
+    float dc = getAmplitudeAt(mat, 0, 0);
     for (int ys = 0; ys < s; ys++) {
       for (int xs = 0; xs < s; xs++) {
         int pos = ((ys + s/2) % s) * s + (xs + s/2) % s;
-        float mag = getMagnitudeAt(mat, xs, ys);
-        mouseDetail.pixels[pos] = color(mag / dc * 255);
+        float mag = getAmplitudeAt(mat, xs, ys);
+        mouseDetail.pixels[pos] = color(rescaleAmplitude(mag / dc) * 255);
       }
     }
     mouseDetail.updatePixels();
+  }
+
+  float rescaleAmplitude(float amp)
+  {
+    return sqrt(sqrt(amp));
   }
 
   void fillMouseImage(Mat mat)
@@ -205,7 +236,7 @@ class FlowFinder extends CalculationStep
     for (int ys = 0; ys < s; ys++) {
       for (int xs = 0; xs < s; xs++) {
         int pos = ys * s + xs;
-        float mag = sq(sq(getMagnitudeAt(mat, xs, ys)));
+        float mag = getAmplitudeAt(mat, xs, ys);
         mouseDetail.pixels[pos] = color(mag);
       }
     }
