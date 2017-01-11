@@ -1,3 +1,73 @@
+
+
+class FlowFinder extends CalculationStep
+{
+  RidgeDetector ridger;
+  
+  float[] flowAngle;
+  float[] flowMag;
+
+
+  // Kernel is applied with this spacing
+  int d = 2;
+
+  int wd, hd;
+
+  public FlowFinder(Step below)
+  {
+    super(below.take);
+    ridger = new RidgeDetector();
+    ridger.input = this;
+  }
+
+  public void allocateResources()
+  {
+    wd = (w - s) / d;
+    hd = (h - s) / d;
+    flowAngle = new float[wd * hd];
+    flowMag = new float[wd * hd];
+  }
+
+  public void calculateImpl()
+  {
+    for (int y = 0; y < hd; y++) {
+      for (int x = 0; x < wd; x++)
+      {
+        Ridge ridge = ridger.findRidgeAt(x*d + s/2, y*d + s/2);
+
+        flowAngle[y * wd + x] = ridge.heading() + HALF_PI;
+        flowMag[y * wd + x] = ridge.mag() * d/s;
+      }
+    }
+  }
+
+  void drawImpl(PGraphics g)
+  {
+    g.image(take.shapeIndex, 0, 0);
+    if (!(keyPressed && (keyCode == KeyEvent.VK_SHIFT)))
+    {
+      g.pushMatrix();
+      g.translate(s/2, s/2);
+      g.scale(d, d);
+      g.stroke(color(255, 0, 0));
+      g.strokeWeight(1 / 10.0);
+      for (int y = screenStartY() / d; y < screenEndY() / d; y++) {
+        for (int x = screenStartX() / d; x < screenEndX() / d; x++)
+        {
+          if (x >= wd || y >= hd) continue; // FIXME?
+          float angle = flowAngle[y*wd + x];
+          float mag = flowMag[y*wd + x];
+          float dx = cos(angle) * mag / 8;
+          float dy = sin(angle) * mag / 8;
+          g.line(x - dx * 10, y - dy * 10, x + dx * 10, y + dy * 10);
+          g.line(x - dy, y + dx, x + dy, y - dx);
+        }
+      }
+      g.popMatrix();
+    }
+  }
+}
+
 class FlowStep extends CalculationStep
 {
   SmoothNormalsStep below;
