@@ -174,8 +174,9 @@ class Mouseover extends Step
       g.translate(mouseX, mouseY);
       g.scale(2);
       g.fill(255);
-      String text = "Amplitude:" + ridge.strength + "\nRelative:" + ridge.strength/dc + "\nRescaled:" + rescaleAmplitude(ridge.strength/dc);
-      text += "\nx:" + ridge.x + "\ny:" + ridge.y;
+      float r = ridge.response.mag();
+      String text = "Amplitude:" + r + "\nRelative:" + r/dc + "\nRescaled:" + rescaleAmplitude(r/dc);
+      text += "\nPhase:" + degrees(ridge.response.heading()) + "\nx:" + ridge.x + "\ny:" + ridge.y;
       g.text(text, 4, -61);
       g.fill(0);
       g.text(text, 5, -60);
@@ -199,19 +200,21 @@ class Mouseover extends Step
   void fillMouseImageDC(Mat mat, Ridge ridge)
   {
     mouseDetail.loadPixels();
+    //colorMode(HSB, TWO_PI, 1, 1);
     float dc = ridger.getAmplitudeAt(mat, 0, 0);
     for (int ys = 0; ys < s; ys++) {
       for (int xs = 0; xs < s; xs++) {
         int pos = ((ys + s/2) % s) * s + (xs + s/2) % s;
-        float mag = ridger.getAmplitudeAt(mat, xs, ys);
-        float val = rescaleAmplitude(mag / dc) * 255;
+        PVector response = ridger.getResponseAt(mat, xs, ys);
+        float val = rescaleAmplitude(response.mag() / dc) * 255;
         if ((xs == ((int)ridge.fx() + s) % s) && (ys == ((int)ridge.fy() + s) % s)) {
           mouseDetail.pixels[pos] = color(0, val, 0);
         } else {
-          mouseDetail.pixels[pos] = color(val);
+          mouseDetail.pixels[pos] = color(val);//color(response.heading() + PI, 0.5, val);
         }
       }
     }
+    //colorMode(RGB, 256);
     mouseDetail.updatePixels();
   }
 

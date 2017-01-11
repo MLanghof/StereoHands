@@ -27,8 +27,8 @@ class RidgeDetector
     // TODO: If there's a stronger signal with lower than allowed frequency, check if it's in the same direction
     //         if yes: discard (just harmonics of a wrinkle or main line)
     
-    if (eliminateLowStrength && (ridge.strength < minRidgeStrength)) {
-      ridge.strength = 0;
+    if (eliminateLowStrength && (ridge.response.mag() < minRidgeStrength)) {
+      ridge.response.mult(0);
       ridge.mult(0);
     }
     return ridge;
@@ -55,7 +55,7 @@ class RidgeDetector
   
   Ridge findPotentialRidge(Mat mat, boolean boundsCheck)
   {
-    float maxStrength = 0;
+    PVector maxReponse = new PVector();
     PVector maxLoc = new PVector();
 
     for (int ys = 0; ys < s; ys++) {
@@ -67,17 +67,24 @@ class RidgeDetector
         if (boundsCheck && (complexF.mag() <= minDctMag)) continue;
         if (boundsCheck && (complexF.mag() >= maxDctMag)) continue;
 
-        float strength = getAmplitudeAt(mat, xs, ys);
-        if (strength > maxStrength) {
-          maxStrength = strength;
+        PVector response = getResponseAt(mat, xs, ys);
+        if (response.mag() > maxReponse.mag()) {
+          maxReponse = response;
           maxLoc = complexF;
         }
       }
     }
     // TODO: Aggregate nearby strength?
-    return new Ridge(maxLoc, maxStrength);
+    return new Ridge(maxLoc, maxReponse);
   }
 
+  // TODO: Does this thrash the stack with tiny vectors?
+  PVector getResponseAt(Mat mat, int x, int y)
+  {
+    double[] tmp = mat.get(y, x);
+    return new PVector((float)tmp[0], (float)tmp[1]);
+  }
+  
   float getAmplitudeAt(Mat mat, int x, int y)
   {
     double[] tmp = mat.get(y, x);
@@ -147,12 +154,12 @@ class RidgeDetector
 
 class Ridge extends PVector
 {
-  float strength;
+  PVector response;
   
-  public Ridge(PVector complexF, float strength)
+  public Ridge(PVector complexF, PVector response)
   {
     super(complexF.x, complexF.y);
-    this.strength = strength;
+    this.response = response;
   }
   
   public float fx() {
