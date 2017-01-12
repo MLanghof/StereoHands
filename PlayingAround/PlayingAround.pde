@@ -79,7 +79,10 @@ void mouseDragged()
 void keyPressed()
 {
   if (key == ' ') {
-    saveOutput();
+    processor.saveImageSimple();
+  }
+  if (key == 'o') {
+    processor.saveImageFull();
   }
   redraw();
 }
@@ -92,9 +95,4 @@ void keyReleased()
 void mouseReleased()
 {
   redraw();
-}
-
-void saveOutput()
-{
-  processor.saveImage();
 }

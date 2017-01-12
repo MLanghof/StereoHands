@@ -71,17 +71,28 @@ class HandProcessor
   
   int outCount = 0;
   
-  public void saveImage()
+  public void saveImageSimple() {
+    saveImage("out" + outCount++ + ".png");
+  }
+  
+  public void saveImageFull() {
+    String name = fileSelector.getFile().getPath();
+    name = name.replaceAll("[^a-zA-Z0-9\\._]+", "_");
+    name += "_" + stepSelector.getCurrent().toString();
+    saveImage("Results/" + name + ".png");
+  }
+  
+  public void saveImage(String path)
   {
     if (inStepUI()) {
       Step currentStep = stepSelector.getCurrent();
-      int s = 2;
+      int s = 1;
       PGraphics pg = createGraphics(currentStep.w * s, currentStep.h * s);
       pg.beginDraw();
       pg.scale(s);
       currentStep.drawOn(pg);
       pg.endDraw();
-      pg.save("out" + outCount++ + ".png");
+      pg.save(path);
     }
   }
   
@@ -235,6 +246,4 @@ class Mouseover extends Step
     }
     mouseDetail.updatePixels();
   }
-  
-  
 }

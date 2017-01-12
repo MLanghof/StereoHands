@@ -144,7 +144,9 @@ class RidgeDetector
       }
     }
     // Transfer dc
-    newComplexMat.put(0, 0, complexMat.get(0, 0));
+    double[] dc = complexMat.get(0, 0);
+    //dc[0] = 50000; dc[1] = 0;
+    newComplexMat.put(0, 0, dc);
     // Invert
     Mat newMat = new Mat();
     Core.dft(newComplexMat, newMat, Core.DFT_INVERSE | Core.DFT_SCALE, 0);
