@@ -34,7 +34,7 @@ class DftStep extends CalculationStep
     super(below.take);
   }
   
-  public void allocateResources() //<>//
+  public void allocateResources() //<>// //<>//
   {
     frequencies = createImage(w * s / d, h * s / d, RGB);
   }

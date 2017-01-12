@@ -219,8 +219,8 @@ class Mouseover extends Step
     for (int ys = 0; ys < s; ys++) {
       for (int xs = 0; xs < s; xs++) {
         int pos = ((ys + s/2) % s) * s + (xs + s/2) % s;
-        PVector response = ridger.getResponseAt(mat, xs, ys);
-        float val = rescaleAmplitude(response.mag() / dc) * 255;
+        float mag = ridger.getAmplitudeAt(mat, xs, ys);
+        float val = rescaleAmplitude(mag / dc) * 255;
         if ((xs == (highlightX + s) % s) && (ys == (higlightY + s) % s)) {
           mouseDetail.pixels[pos] = color(0, val, 0);
         } else {

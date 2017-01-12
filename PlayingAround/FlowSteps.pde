@@ -81,7 +81,7 @@ class RidgeManipulatorStep extends CalculationStep
   // Kernel is applied with this spacing
   // d=1 is almost indistinguishable but way more work than d=2
   // d=4 is noticably worse but also MUCH faster
-  final int d = 2;
+  final int d = 4;
   
   final int s;
   

@@ -20,6 +20,9 @@ class RidgeDetector
   //float minRidgeStrength = 1300;
   float minRidgeStrength = 80 * s; // Empirical
 
+  // Aggregation area radius: 
+  final int a = 1;
+
   public RidgeDetector()
   {
     subMat = new Mat(s, s, CvType.CV_32FC1);
@@ -73,7 +76,7 @@ class RidgeDetector
         if (maxRidgeCheck && (complexF.mag() <= minDftMagRidge)) continue;
         if (wrinkleCheck && (complexF.mag() <= minDftMagWrinkle)) continue;
 
-        PVector response = getResponseAt(mat, xs, ys);
+        PVector response = getResponseAround(mat, xs, ys);
         if (response.mag() > maxReponse.mag()) {
           maxReponse = response;
           maxLoc = complexF;
@@ -96,6 +99,29 @@ class RidgeDetector
     double[] tmp = mat.get(y, x);
     return mag((float)tmp[0], (float)tmp[1]);
   }
+  
+  PVector getResponseAround(Mat mat, int x, int y)
+  {
+    double rx = 0;
+    double ry = 0;
+    for (int j = -a; j <= a; j++) {
+      for (int i = -a; i <= a; i++) {
+        int xs = (x + i) % s;
+        int ys = (y + j) % s;
+        if ((xs == 0) && (ys == 0)) continue; // Ignore DC
+        double[] tmp = mat.get(y, x);
+        rx += tmp[0];
+        ry += tmp[1];
+      }
+    }
+    return new PVector((float)rx, (float)ry);
+  }
+  
+  float getAmplitudeAround(Mat mat, int x, int y)
+  {
+    return getResponseAround(mat, x, y).mag();
+  }
+
 
   boolean qualifiesAsRidge(Ridge ridge)
   {
@@ -119,11 +145,9 @@ class RidgeDetector
     int maxY = ((int)ridge.fy() + s) % s;
 
     Mat newComplexMat = complexMat.clone();
-    // Radius of frequency area to clear.
-    int sp = 1;
     // This may wrap a bit more than intended but it's no big deal
-    for (int y = maxY-sp; y <= maxY+sp; y++) {
-      for (int x = maxX-sp; x <= maxX+sp; x++) {
+    for (int y = maxY-a; y <= maxY+a; y++) {
+      for (int x = maxX-a; x <= maxX+a; x++) {
         if ((((x+s)%s) == 0) && (((y+s)%s) == 0)) continue;
         newComplexMat.put((y+s)%s, (x+s)%s, 0.0, 0.0);
         newComplexMat.put((s-y)%s, (s-x)%s, 0.0, 0.0);
@@ -147,11 +171,9 @@ class RidgeDetector
     int maxX = ((int)ridge.fx() + s) % s;
     int maxY = ((int)ridge.fy() + s) % s;
 
-    // Radius of frequency area to retain.
-    int sp = 1;
     Mat newComplexMat = Mat.zeros(complexMat.size(), complexMat.type());
-    for (int y = maxY-sp; y <= maxY+sp; y++) {
-      for (int x = maxX-sp; x <= maxX+sp; x++) {
+    for (int y = maxY-a; y <= maxY+a; y++) {
+      for (int x = maxX-a; x <= maxX+a; x++) {
         double[] data = complexMat.get((y+s)%s, (x+s)%s);
         newComplexMat.put((y+s)%s, (x+s)%s, data);
         // Complex conjugate
