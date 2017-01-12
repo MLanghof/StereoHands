@@ -76,11 +76,12 @@ class RidgeManipulatorStep extends CalculationStep
   PImage modified;
   
   boolean ridgesOnly = true;
+  boolean doubleRidges = true;
 
   // Kernel is applied with this spacing
   // d=1 is almost indistinguishable but way more work than d=2
   // d=4 is noticably worse but also MUCH faster
-  final int d = 4;
+  final int d = 2;
   
   final int s;
   
@@ -111,7 +112,11 @@ class RidgeManipulatorStep extends CalculationStep
         int y = yd*d + s/2;
         Mat out;
         if (ridgesOnly) {
-          out = ridger.isolateRidgeAt(x, y);
+          if (doubleRidges) {
+            out = ridger.isolateTwoRidgesAt(x, y);
+          } else {
+            out = ridger.isolateRidgeAt(x, y);
+          }
         } else {
           out = ridger.eliminateRidgeAt(x, y);
         }
@@ -132,6 +137,22 @@ class RidgeManipulatorStep extends CalculationStep
     g.image(modified, 0, 0);
   }
 }
+
+/*class WrinkleAngleStep extends CalculationStep
+{
+  RidgeDetector ridger;
+  
+  final int s;
+  
+  public WrinkleAngleStep(Step below)
+  {
+    super(below.take);
+    ridger = new RidgeDetector();
+    ridger.input = this;
+    s = ridger.s;
+  }
+  
+}*/
 
 
 class FlowStep extends CalculationStep

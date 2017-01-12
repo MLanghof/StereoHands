@@ -169,15 +169,17 @@ class Mouseover extends Step
 
     if (keyPressed && (keyCode == KeyEvent.VK_SHIFT))
     {
-      Mat newMat = ridger.eliminateRidgeAt(imgX, imgY);
-      fillMouseImage(newMat);
+      /*Mat newMat = ridger.eliminateRidgeAt(imgX, imgY);*/
+      Mat complexMat = ridger.getFrequencySpaceAt(imgX, imgY);
+      Mat newComplexMat = ridger.isolateTwoRidgeFrequencies(complexMat);
+      fillMouseImageDC(newComplexMat, 0, 0);
       g.image(mouseDetail, imgX-s/2, imgY-s/2);
     }
     else
     {
       Mat complexMat = ridger.getFrequencySpaceAt(imgX, imgY);
-      Ridge ridge = ridger.findPotentialRidge(complexMat, true);
-      fillMouseImageDC(complexMat, ridge);
+      Ridge ridge = ridger.findPotentialRidge(complexMat, true, true, false);
+      fillMouseImageDC(complexMat, (int)ridge.fx(), (int)ridge.fy());
       float dc = ridger.getAmplitudeAt(complexMat, 0, 0);
       // TODO: Show selected main frequency?
       g.pushMatrix();
@@ -202,13 +204,14 @@ class Mouseover extends Step
       g.translate(-s/2 + 0.5, -s/2 + 0.5);
       g.stroke(color(0, 200, 0, 100));
       // Apparently we're using rectMode CENTER?
-      g.ellipse(0, 0, 2*minDctMag, 2*minDctMag);
-      g.ellipse(0, 0, 2*maxDctMag, 2*maxDctMag);
+      g.ellipse(0, 0, 2*minDftMagRidge, 2*minDftMagRidge);
+      g.ellipse(0, 0, 2*maxDftMagRidge, 2*maxDftMagRidge);
+      g.ellipse(0, 0, 2*minDftMagWrinkle, 2*minDftMagWrinkle);
       g.popMatrix();
     }
   }
 
-  void fillMouseImageDC(Mat mat, Ridge ridge)
+  void fillMouseImageDC(Mat mat, int highlightX, int higlightY)
   {
     mouseDetail.loadPixels();
     //colorMode(HSB, TWO_PI, 1, 1);
@@ -218,7 +221,7 @@ class Mouseover extends Step
         int pos = ((ys + s/2) % s) * s + (xs + s/2) % s;
         PVector response = ridger.getResponseAt(mat, xs, ys);
         float val = rescaleAmplitude(response.mag() / dc) * 255;
-        if ((xs == ((int)ridge.fx() + s) % s) && (ys == ((int)ridge.fy() + s) % s)) {
+        if ((xs == (highlightX + s) % s) && (ys == (higlightY + s) % s)) {
           mouseDetail.pixels[pos] = color(0, val, 0);
         } else {
           mouseDetail.pixels[pos] = color(val);//color(response.heading() + PI, 0.5, val);

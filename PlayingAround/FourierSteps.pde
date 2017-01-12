@@ -4,17 +4,20 @@ final int s = 16;
 
 // TODO: This is debatable, 6 is also a good idea at times
 final float maxRidgeInterval = 5.65; // Maximum pixel distance between ridge tops that is considered a ridge
-final float minRidgeInterval = 2; // * sqrt(2); // Minimum...
-
+final float minRidgeInterval = 2.3; // * sqrt(2); // Minimum...
+final float maxWrinkleInterval = 12;
 
 final float minRidgeFrequency = 1.0 / maxRidgeInterval;
 // s / 2 periods in s -> f = 1/2    -> mag = s;
 // 1 / 2 periods in s -> f = 1/(2s) -> mag = 1;
 // -> mag = f * 2s
-final float minDctMag = minRidgeFrequency * s;
+final float minDftMagRidge = minRidgeFrequency * s;
 
 final float maxRidgeFrequency = 1.0 / minRidgeInterval;
-final float maxDctMag = maxRidgeFrequency * s;
+final float maxDftMagRidge = maxRidgeFrequency * s;
+
+final float minWrinkleFrequency = 1.0 / maxWrinkleInterval;
+final float minDftMagWrinkle = minWrinkleFrequency * s;
 
 // This is necessary to actually load the OpenCV library
 OpenCV cv = new OpenCV(this, s, s);
@@ -101,9 +104,10 @@ class FlowFromDftStep extends CalculationStep
     super(below.take);
     this.below = below;
     d = below.d;
-    
-    println("Minimum DCT center distance: ", minDctMag);
-    println("Maximum DCT center distance: ", maxDctMag); 
+   
+    println("Minimum DFT center distance ridge: ", minDftMagRidge);
+    println("Maximum DFT center distance ridge: ", maxDftMagRidge); 
+    println("Minimum DFT center distance wrinkle: ", minDftMagWrinkle); 
   }
   
   public void allocateResources()
@@ -132,8 +136,8 @@ class FlowFromDftStep extends CalculationStep
             if (c == color(0, 0, 255)) continue;
             
             PVector v = new PVector(xs - s/2, ys - s/2);
-            if (v.mag() <= minDctMag) continue;
-            if (v.mag() >= maxDctMag) continue;
+            if (v.mag() <= minDftMagRidge) continue;
+            if (v.mag() >= maxDftMagRidge) continue;
             float strength = red(c) / 2;// * sqrt(v.mag() / s);
             if (strength > max) {
               max = strength;
