@@ -40,7 +40,7 @@ class HandProcessor
     stepSelector.add(new FullDftStep(shapeIndexStep));
     stepSelector.add(new FullDctStep(shapeIndexStep));
     stepSelector.add(new FlowFinder(shapeIndexStep));
-    stepSelector.add(new RidgeManipulatorStep(shapeIndexStep));
+    stepSelector.add(new FeatureStep(shapeIndexStep));
     
     mouseover = new Mouseover(currentTake);
   }

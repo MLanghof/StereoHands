@@ -7,7 +7,6 @@ class FlowFinder extends CalculationStep
   float[] flowAngle;
   float[] flowMag;
 
-
   // Kernel is applied with this spacing
   final int d = 2;
 
@@ -69,16 +68,14 @@ class FlowFinder extends CalculationStep
 }
 
 
-class RidgeManipulatorStep extends CalculationStep
+class FeatureStep extends CalculationStep
 {
   RidgeDetector ridger;
   
   PImage modified;
-  
-  boolean ridgesOnly = true;
-  boolean doubleRidges = true;
+  ArrayList<Feature> features;
 
-  // Kernel is applied with this spacing
+  // Features are searched with this spacing
   // d=1 is almost indistinguishable but way more work than d=2
   // d=4 is noticably worse but also MUCH faster
   final int d = 4;
@@ -87,7 +84,7 @@ class RidgeManipulatorStep extends CalculationStep
   
   int wd, hd;
   
-  public RidgeManipulatorStep(Step below)
+  public FeatureStep(Step below)
   {
     super(below.take);
     ridger = new RidgeDetector();
@@ -100,6 +97,7 @@ class RidgeManipulatorStep extends CalculationStep
     wd = (w - s) / d;
     hd = (h - s) / d;
     modified = createImage(w, h, RGB);
+    features = new ArrayList<Feature>();
   }
   
   public void calculateImpl()
@@ -110,21 +108,17 @@ class RidgeManipulatorStep extends CalculationStep
       {
         int x = xd*d + s/2;
         int y = yd*d + s/2;
-        Mat out;
-        if (ridgesOnly) {
-          if (doubleRidges) {
-            out = ridger.isolateTwoRidgesAt(x, y);
-          } else {
-            out = ridger.isolateRidgeAt(x, y);
-          }
-        } else {
-          out = ridger.eliminateRidgeAt(x, y);
+        Extracted ex = ridger.getRawFeatureAt(x, y);
+        
+        Feature f = featureMeMaybe(x, y, ex);
+        if (f != null) {
+          features.add(new Feature(x, y, ex.ridge1, ex.ridge2));
         }
         
         for (int ydd = 0; ydd < d; ydd++) {
           for (int xdd = 0; xdd < d; xdd++) {
             int pos = (y + ydd) * w + x + xdd;
-            modified.pixels[pos] = color(ridger.getAmplitudeAt(out, xdd + s/2, ydd + s/2));
+            modified.pixels[pos] = color(ridger.getAmplitudeAt(ex.out(), xdd + s/2, ydd + s/2));
           }
         }
       }
@@ -135,6 +129,22 @@ class RidgeManipulatorStep extends CalculationStep
   void drawImpl(PGraphics g)
   {
     g.image(modified, 0, 0);
+    if (!(keyPressed && (keyCode == KeyEvent.VK_SHIFT)))
+    {
+      g.strokeWeight(d / 20.0);
+      for (Feature f : features)
+      {
+        if (!onScreen(f.x, f.y, g)) continue;
+        if (!(keyPressed && (key == '2'))) {
+          g.stroke(0, 0, 200);
+          drawFlowIndicator(g, f.x, f.y, f.ridge.strength() * d, f.ridge.angle());
+        }
+        if (!(keyPressed && (key == '1'))) {
+          g.stroke(200, 0, 0);
+          drawFlowIndicator(g, f.x, f.y, f.wrinkle.strength() * d, f.wrinkle.angle());
+        }
+      }
+    }
   }
 }
 
@@ -229,10 +239,7 @@ class FlowStep extends CalculationStep
       {
         float angle = flowAngle[y*w + x];
         float mag = flowMag[y*w + x];
-        float dx = cos(angle) * d * mag;
-        float dy = sin(angle) * d * mag;
-        g.line(x - dx * 10, y - dy * 10, x + dx * 10, y + dy * 10);
-        g.line(x - dy, y + dx, x + dy, y - dx);
+        drawFlowIndicator(g, x, y, mag * 10 * d, angle);
       }
     }
     g.popMatrix();
@@ -298,10 +305,7 @@ class SmoothNormalsStep extends CalculationStep
       for (int x = screenStartX(); x < screenEndX(); x += d)
       {
         PVector n = normals[y*w + x];
-        float dx = n.x * d;
-        float dy = n.y * d;
-        g.line(x, y, x + dx * 8, y + dy * 8);
-        g.line(x - dy, y + dx, x + dy, y - dx);
+        drawFlowIndicator(g, x, y, n.mag() * d * 8, n.heading());
       }
     }
     g.popMatrix();
@@ -376,14 +380,20 @@ class DownsampleFlowStep extends CalculationStep
     for (int y = screenStartY() / d; y < min(screenEndY() / d, hd); y++) {
       for (int x = screenStartX() / d; x < min(screenEndX() / d, wd); x++)
       {
-        float angle = flowAngle[y*wd + x];
         float mag = flowMag[y*wd + x];
-        float dx = cos(angle) * mag;
-        float dy = sin(angle) * mag;
-        g.line(x - dx * 10, y - dy * 10, x + dx * 10, y + dy * 10);
-        g.line(x - dy, y + dx, x + dy, y - dx);
+        float angle = flowAngle[y*wd + x];
+        drawFlowIndicator(g, x, y, mag * 10, angle);
       }
     }
     g.popMatrix();
   }
+}
+
+
+void drawFlowIndicator(PGraphics g, float x, float y, float mag, float angle)
+{
+  float dx = cos(angle) * mag;
+  float dy = sin(angle) * mag;
+  g.line(x - dx, y - dy, x + dx, y + dy);
+  g.line(x - dy / 10, y + dx / 10, x + dy / 10, y - dx / 10);
 }

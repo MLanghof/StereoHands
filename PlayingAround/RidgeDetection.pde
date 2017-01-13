@@ -3,6 +3,12 @@ import java.awt.event.KeyEvent;
 // Ugly, I know.
 final int SSS = s;
 
+
+// Amplitude threshold for accepting a maximum strength amplitude as ridge.
+//float minRidgeStrength = 1500;
+//float minRidgeStrength = 1300;
+float minRidgeStrength = 80 * s; // Empirical
+
 class RidgeDetector
 {
   // Filter kernel (DFT window) size
@@ -15,13 +21,9 @@ class RidgeDetector
   Mat subMat, complexMat;
 
   boolean eliminateLowStrength = true; 
-  // Amplitude threshold for accepting a maximum strength amplitude as ridge.
-  //float minRidgeStrength = 1500;
-  //float minRidgeStrength = 1300;
-  float minRidgeStrength = 80 * s; // Empirical
 
   // Aggregation area radius: 
-  final int a = 1;
+  final static int a = 1;
 
   public RidgeDetector()
   {
@@ -61,7 +63,7 @@ class RidgeDetector
     }
   }
 
-  Ridge findPotentialRidge(Mat mat, boolean minRidgeCheck, boolean maxRidgeCheck, boolean wrinkleCheck)
+  Ridge findPotentialRidge(Mat complexMat, boolean minRidgeCheck, boolean maxRidgeCheck, boolean wrinkleCheck)
   {
     PVector maxReponse = new PVector();
     PVector maxLoc = new PVector();
@@ -76,7 +78,7 @@ class RidgeDetector
         if (maxRidgeCheck && (complexF.mag() <= minDftMagRidge)) continue;
         if (wrinkleCheck && (complexF.mag() <= minDftMagWrinkle)) continue;
 
-        PVector response = getResponseAround(mat, xs, ys);
+        PVector response = getResponseAround(complexMat, xs, ys);
         if (response.mag() > maxReponse.mag()) {
           maxReponse = response;
           maxLoc = complexF;
@@ -84,7 +86,7 @@ class RidgeDetector
       }
     }
     // TODO: Aggregate nearby strength?
-    return new Ridge(maxLoc, maxReponse);
+    return new Ridge(maxLoc, maxReponse, getAmplitudeAt(complexMat, 0, 0));
   }
 
   // TODO: Does this thrash the stack with tiny vectors?
@@ -228,16 +230,58 @@ class RidgeDetector
     newComplexMat.put(0, 0, dc);
     return newComplexMat;
   }
+  
+  Extracted getRawFeatureAt(int x, int y)
+  {
+    complexMat = getFrequencySpaceAt(x, y);
+    return extractRawFeature(complexMat);
+  }
+  
+  Extracted extractRawFeature(Mat complexMat)
+  {
+    Extracted ex = new Extracted();
+    Ridge ridge1 = findPotentialRidge(complexMat, true, true, false);
+    if (!qualifiesAsRidge(ridge1)) {
+      ex.complexF = dcOnly(complexMat);
+      return ex;
+    }
+    ex.ridge1 = ridge1;
+    Mat ridgeMat1 = isolateRidgeFrequencies(complexMat, ridge1);
+
+    Mat searchMat2 = eliminateRidge(complexMat, ridge1);
+    Ridge ridge2 = findPotentialRidge(searchMat2, true, false, true);
+    if (!qualifiesAsRidge(ridge2)) {
+      ex.complexF = ridgeMat1;
+      return ex;
+    }
+    ex.ridge2 = ridge2;
+    Mat ridgeMat2 = isolateRidgeFrequencies(complexMat, ridge2);
+
+    if (false) {
+      ex.complexF = eliminateRidge(complexMat, ridge1);
+    } else {
+      Core.bitwise_or(ridgeMat1, ridgeMat2, ex.complexF);
+    }
+    return ex;
+  }
 }
 
+
+// TODO: Rename
 class Ridge extends PVector
 {
   PVector response;
+  float dc;
 
-  public Ridge(PVector complexF, PVector response)
+  public Ridge(PVector complexF, PVector response, float dc)
   {
     super(complexF.x, complexF.y);
     this.response = response;
+    this.dc = dc;
+  }
+
+  public float angle() {
+    return heading() + HALF_PI;
   }
 
   public float fx() {
@@ -245,5 +289,101 @@ class Ridge extends PVector
   }
   public float fy() {
     return y;
+  }
+  public float f() {
+    return mag();
+  }
+  
+  public float strength() {
+    return sqrt(response.mag() / dc);
+  }
+}
+// TODO: That's a shitty name
+class Extracted
+{
+  Mat complexF;
+  private Mat out;
+  Ridge ridge1, ridge2;
+
+  public Extracted()
+  {
+    complexF = new Mat();
+    out = new Mat();
+  }
+
+  public Extracted(Ridge ridge1, Ridge ridge2, Mat complexF)
+  {
+    this.ridge1 = ridge1;
+    this.ridge2 = ridge2;
+    this.complexF = complexF;
+  }
+  
+  public int ridgeCount()
+  {
+    return (ridge1 == null ? 0 : 1) + (ridge2 == null ? 0 : 1);
+  }
+  
+  public Mat out()
+  {
+    if (out.empty()) {
+      Core.dft(complexF, out, Core.DFT_INVERSE | Core.DFT_SCALE, 0);
+    }
+    return out;
+  }
+}
+
+float angleThreshold = radians(15);
+
+float weightThreshold = 0; // TODO: TBD
+
+// Yay, empirical constants
+float minRidgeResponse = (RidgeDetector.a == 1 ? 15000 * pow(s/16, 1.7) : minRidgeStrength);
+
+//
+float minWrinkleResponse = 0.9 * minRidgeResponse;
+
+Feature featureMeMaybe(int x, int y, Extracted ex)
+{
+  if (ex.ridgeCount() != 2) return null;
+  
+  Feature feature = new Feature(x, y, ex.ridge1, ex.ridge2);
+  if (feature.ridge.response.mag() < minRidgeResponse) return null;
+  if (feature.wrinkle.response.mag() < minWrinkleResponse) return null;
+  
+  //if (feature.getAngle() < angleThreshold) return null;
+  if (feature.getWeight() < weightThreshold) return null;
+  return feature;
+}
+
+class Feature
+{
+  int x, y;
+
+  Ridge ridge;
+  Ridge wrinkle;
+
+  public Feature(int x, int y, Ridge ridge1, Ridge ridge2)
+  {
+    this.x = x;
+    this.y = y;
+    // The wrinkel is always the lower frequency one
+    if (ridge1.f() > ridge2.f()) {
+      this.ridge = ridge1;
+      this.wrinkle = ridge2;
+    } else {
+      this.ridge = ridge2;
+      this.wrinkle = ridge1;
+    }
+    //println(getAngle(), getWeight());
+  }
+
+  public float getAngle()
+  {
+    return PVector.angleBetween(ridge, wrinkle);
+  }
+
+  public float getWeight()
+  {
+    return ridge.strength() * wrinkle.strength();
   }
 }
