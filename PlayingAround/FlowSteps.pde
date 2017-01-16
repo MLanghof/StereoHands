@@ -74,6 +74,7 @@ class FeatureStep extends CalculationStep
   
   PImage modified;
   ArrayList<Feature> features;
+  Ridge[] ridges;
 
   // Features are searched with this spacing
   // d=1 is almost indistinguishable but way more work than d=2
@@ -98,6 +99,7 @@ class FeatureStep extends CalculationStep
     hd = (h - s) / d;
     modified = createImage(w, h, RGB);
     features = new ArrayList<Feature>();
+    ridges = new Ridge[wd * hd];
   }
   
   public void calculateImpl()
@@ -114,6 +116,7 @@ class FeatureStep extends CalculationStep
         if (f != null) {
           features.add(new Feature(x, y, ex.ridge1, ex.ridge2));
         }
+        ridges[yd * wd + xd] = ex.ridge1;
         
         for (int ydd = 0; ydd < d; ydd++) {
           for (int xdd = 0; xdd < d; xdd++) {
@@ -129,22 +132,45 @@ class FeatureStep extends CalculationStep
   void drawImpl(PGraphics g)
   {
     g.image(modified, 0, 0);
+    g.pushMatrix();
     if (!(keyPressed && (keyCode == KeyEvent.VK_SHIFT)))
     {
-      g.strokeWeight(d / 20.0);
-      for (Feature f : features)
+      if (!(keyPressed && (key == '3')))
       {
-        if (!onScreen(f.x, f.y, g)) continue;
-        if (!(keyPressed && (key == '2'))) {
-          g.stroke(0, 0, 200);
-          drawFlowIndicator(g, f.x, f.y, f.ridge.strength() * d, f.ridge.angle());
+        g.strokeWeight(d / 20.0);
+        for (Feature f : features)
+        {
+          if (!onScreen(f.x, f.y, g)) continue;
+          if (!(keyPressed && (key == '2'))) {
+            g.stroke(0, 0, 200);
+            g.strokeWeight(d * f.ridge.strength() / 10);
+            drawFlowIndicator(g, f.x, f.y, f.ridge.strength() * d, f.ridge.angle());
+          }
+          if (!(keyPressed && (key == '1'))) {
+            g.stroke(200, 0, 0);
+            g.strokeWeight(d * f.wrinkle.strength() / 10);
+            drawFlowIndicator(g, f.x, f.y, f.wrinkle.strength() * d, f.wrinkle.angle());
+          }
         }
-        if (!(keyPressed && (key == '1'))) {
-          g.stroke(200, 0, 0);
-          drawFlowIndicator(g, f.x, f.y, f.wrinkle.strength() * d, f.wrinkle.angle());
+      }
+      else
+      {
+        g.scale(d, d);
+        g.stroke(0, 0, 200);
+        g.translate(s/d/2, s/d/2);
+        for (int y = screenStartY() / d; y < min(screenEndY() / d, hd); y++) {
+          for (int x = screenStartX() / d; x < min(screenEndX() / d, wd); x++)
+          {
+            int pos = y * wd + x;
+            Ridge ridge = ridges[pos];
+            if (ridge == null) continue;
+            g.strokeWeight(ridge.strength() / 10);
+            drawFlowIndicator(g, x, y, ridge.strength(), ridge.angle());
+          }
         }
       }
     }
+    g.popMatrix();
   }
 }
 

@@ -5,9 +5,7 @@ final int SSS = s;
 
 
 // Amplitude threshold for accepting a maximum strength amplitude as ridge.
-//float minRidgeStrength = 1500;
-//float minRidgeStrength = 1300;
-float minRidgeStrength = 80 * s; // Empirical
+float minRidgeStrength =  (RidgeDetector.a == 1 ? 12000 * pow(s/16, 1.7) : 80 * s); // Empirical
 
 class RidgeDetector
 {
@@ -295,7 +293,7 @@ class Ridge extends PVector
   }
   
   public float strength() {
-    return sqrt(response.mag() / dc);
+    return response.mag() / dc;
   }
 }
 // TODO: That's a shitty name
