@@ -26,7 +26,13 @@ void setup() {
 } 
 
 void draw() {
-  if (frameCount == 1) surface.setLocation(180, -10);
+  if (frameCount == 1) {
+    surface.setLocation(180, -10);
+    /*while (processor.fileSelector.recursiveNext()) {
+      println(processor.fileSelector.getFile().getPath());
+    }*/
+  }
+  
   background(0);
   if (processor.getCurrentImage() != null)
   {

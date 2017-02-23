@@ -55,6 +55,11 @@ abstract class SelectorBar
   public abstract int getMax();
   
   public abstract String getName(int index);
+  
+  public boolean isMaxSelected()
+  {
+    return selected == getMax() - 1;
+  }
 }
 
 class SimpleSelectorBar extends SelectorBar
@@ -99,7 +104,7 @@ class FileSelectorBar extends SelectorBar
   void update()
   {
     files = root.listFiles();
-    selected = min(selected, getMax());
+    selected = min(selected, getMax()-1);
     if (mustDescend()) {
       if (child == null) {
         child = new FileSelectorBar(getSelected(), Y + HEIGHT);
@@ -158,13 +163,31 @@ class FileSelectorBar extends SelectorBar
         return child.handleClick(x, y);
       }
     }
-      return false;
+    return false;
   }
   
   public void setRoot(File newRoot)
   {
     root = newRoot;
     update();
+  }
+  
+  // Selects the next file recursively (DFS).
+  // Returns whether another file could be chosen at this level or below.
+  public boolean recursiveNext()
+  {
+    if (mustDescend() && child.recursiveNext()) {
+      return true;
+    }
+    if (isMaxSelected()) {
+      return false;
+    }
+    selected++;
+    update();
+    if (mustDescend()) {
+      child = new FileSelectorBar(getSelected(), Y + HEIGHT);
+    }
+    return true;
   }
 }
 
