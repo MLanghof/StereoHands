@@ -56,7 +56,15 @@ class RidgeDetector
     for (int ys = -s/2; ys < s/2; ys++) {
       for (int xs = -s/2; xs < s/2; xs++) {
         int pos = (y + ys) * input.w + x + xs;
-        subMat.put(ys + s/2, xs + s/2, red(input.take.shapeIndex.pixels[pos]));
+        // TODO: Isolated black pixels do appear in the input image
+        int val = (int)red(input.take.shapeIndex.pixels[pos]);
+        if (val == 0) {
+          // Any area with background pixels in it is made uniform
+          val = (int)red(input.take.shapeIndex.pixels[y*input.w + x]);
+          subMat.setTo(Scalar.all(val));
+          return;
+        }
+        subMat.put(ys + s/2, xs + s/2, val);
       }
     }
   }
