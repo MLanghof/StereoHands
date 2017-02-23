@@ -12,6 +12,8 @@ float panY = 0;
 
 
 final int SIZE = 2048;
+
+boolean reducedSampleSize = true;
   
 
 void setup() {
@@ -28,9 +30,6 @@ void setup() {
 void draw() {
   if (frameCount == 1) {
     surface.setLocation(180, -10);
-    /*while (processor.fileSelector.recursiveNext()) {
-      println(processor.fileSelector.getFile().getPath());
-    }*/
   }
   
   background(0);

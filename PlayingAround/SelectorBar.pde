@@ -103,7 +103,7 @@ class FileSelectorBar extends SelectorBar
   
   void update()
   {
-    files = root.listFiles();
+    files = filterFiles(root.listFiles());
     selected = min(selected, getMax()-1);
     if (mustDescend()) {
       if (child == null) {
@@ -189,15 +189,25 @@ class FileSelectorBar extends SelectorBar
     }
     return true;
   }
-}
-
-/*class StepSelectorBar extends SimpleSelectorBar
-{
-  public StepSelectorBar(int max, int Y)
+  
+  private File[] filterFiles(File[] files)
   {
-    super(max, Y);
+    if (!reducedSampleSize) return files;
+    ArrayList<File> newFiles = new ArrayList<File>();
+    for (File file : files) {
+      String name = file.getName();
+      // Don't care about NIR
+      if (match(name, "NIR") != null) continue;
+      // Only use image 001 for now.
+      if ((match(name, "00\\d") != null) && (match(name, "001") == null)) continue;
+      newFiles.add(file);
+    }
+    // TODO: This is a real danger
+    //if (newFiles.isEmpty()) 
+    //return files;
+    return newFiles.toArray(new File[0]); // This is one weird function
   }
-}*/
+}
 
 class ObjectSelectorBar<T> extends SelectorBar
 {
