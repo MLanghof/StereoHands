@@ -181,7 +181,6 @@ class Mouseover extends Step
       Ridge ridge = ridger.findPotentialRidge(complexMat, true, true, false);
       fillMouseImageDC(complexMat, (int)ridge.fx(), (int)ridge.fy());
       float dc = ridger.getAmplitudeAt(complexMat, 0, 0);
-      // TODO: Show selected main frequency?
       g.pushMatrix();
       g.resetMatrix();
       g.translate(mouseX, mouseY);

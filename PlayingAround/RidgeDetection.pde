@@ -91,11 +91,9 @@ class RidgeDetector
         }
       }
     }
-    // TODO: Aggregate nearby strength?
     return new Ridge(maxLoc, maxReponse, getAmplitudeAt(complexMat, 0, 0));
   }
 
-  // TODO: Does this thrash the stack with tiny vectors?
   PVector getResponseAt(Mat mat, int x, int y)
   {
     double[] tmp = mat.get(y, x);
@@ -273,7 +271,6 @@ class RidgeDetector
 }
 
 
-// TODO: Rename
 class Ridge extends PVector
 {
   PVector response;
