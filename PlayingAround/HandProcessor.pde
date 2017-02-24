@@ -137,6 +137,12 @@ class HandProcessor
     return uiSelector.getCurrentIndex() == 0;
   }
   
+  void nextInput()
+  {
+    fileSelector.recursiveNext();
+    openFile();
+  }
+  
   void saveFeatures()
   {
     try {

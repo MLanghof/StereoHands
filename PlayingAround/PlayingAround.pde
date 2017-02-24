@@ -92,6 +92,10 @@ void keyPressed()
   if (key == 's') {
     processor.saveFeatures();
   }
+  
+  if (keyCode == RIGHT) {
+    processor.nextInput();
+  }
   redraw();
 }
 
