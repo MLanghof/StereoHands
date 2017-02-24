@@ -89,6 +89,9 @@ void keyPressed()
   if (key == 'o') {
     processor.saveImageFull();
   }
+  if (key == 's') {
+    processor.saveFeatures();
+  }
   redraw();
 }
 

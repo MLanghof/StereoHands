@@ -1,3 +1,5 @@
+import java.io.*;
+
 class HandProcessor
 {
   Take currentTake;
@@ -12,6 +14,7 @@ class HandProcessor
   SmoothNormalsStep smoothNormalsStep;
   FlowStep flowStep;
   DftStep dctStep;
+  FeatureStep featureStep;
   
   Mouseover mouseover;
   
@@ -40,7 +43,8 @@ class HandProcessor
     stepSelector.add(new FullDftStep(shapeIndexStep));
     stepSelector.add(new FullDctStep(shapeIndexStep));
     stepSelector.add(new FlowFinder(shapeIndexStep));
-    stepSelector.add(new FeatureStep(shapeIndexStep));
+    featureStep = new FeatureStep(shapeIndexStep);
+    stepSelector.add(featureStep);
     
     mouseover = new Mouseover(currentTake);
   }
@@ -131,6 +135,20 @@ class HandProcessor
   boolean inStepUI()
   {
     return uiSelector.getCurrentIndex() == 0;
+  }
+  
+  void saveFeatures()
+  {
+    try {
+      FileOutputStream fileOut = new FileOutputStream("D:/Features/features.ser");
+      ObjectOutputStream out = new ObjectOutputStream(fileOut);
+      out.writeObject(featureStep.features);
+      out.close();
+      fileOut.close();
+      println("Saved features to 'features.ser'!");
+    } catch(IOException e) {
+      e.printStackTrace();
+    }
   }
 }
 

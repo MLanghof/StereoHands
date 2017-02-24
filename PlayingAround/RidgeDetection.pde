@@ -271,7 +271,7 @@ class RidgeDetector
 }
 
 
-class Ridge extends PVector
+static class Ridge extends PVector
 {
   PVector response;
   float dc;
@@ -358,7 +358,7 @@ Feature featureMeMaybe(int x, int y, Extracted ex)
   return feature;
 }
 
-class Feature
+static class Feature implements java.io.Serializable
 {
   int x, y;
 
@@ -389,4 +389,7 @@ class Feature
   {
     return ridge.strength() * wrinkle.strength();
   }
+}
+
+static class Features extends ArrayList<Feature> implements Serializable {
 }
