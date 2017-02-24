@@ -369,7 +369,7 @@ static class Feature implements java.io.Serializable
   {
     this.x = x;
     this.y = y;
-    // The wrinkel is always the lower frequency one
+    // The wrinkle is always the lower frequency one
     if (ridge1.f() > ridge2.f()) {
       this.ridge = ridge1;
       this.wrinkle = ridge2;
@@ -377,7 +377,6 @@ static class Feature implements java.io.Serializable
       this.ridge = ridge2;
       this.wrinkle = ridge1;
     }
-    //println(getAngle(), getWeight());
   }
 
   public float getAngle()
@@ -389,7 +388,4 @@ static class Feature implements java.io.Serializable
   {
     return ridge.strength() * wrinkle.strength();
   }
-}
-
-static class Features extends ArrayList<Feature> implements Serializable {
 }

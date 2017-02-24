@@ -146,14 +146,34 @@ class HandProcessor
   void saveFeatures()
   {
     try {
-      FileOutputStream fileOut = new FileOutputStream("D:/Features/features.ser");
+      FileOutputStream fileOut = new FileOutputStream(featurePath);
       ObjectOutputStream out = new ObjectOutputStream(fileOut);
       out.writeObject(featureStep.features);
       out.close();
       fileOut.close();
-      println("Saved features to 'features.ser'!");
+      println("Saved features!");
     } catch(IOException e) {
       e.printStackTrace();
+    }
+  }
+  
+  void loadFeatures()
+  {
+    try {
+      FileInputStream fileIn = new FileInputStream(featurePath);
+      ObjectInputStream in = new ObjectInputStream(fileIn);
+      featureStep.features = (ArrayList<Feature>)in.readObject();
+      featureStep.calculated = true;
+      in.close();
+      fileIn.close();
+      println("Loaded features!");
+    } catch(IOException i) {
+      i.printStackTrace();
+      return;
+    } catch(ClassNotFoundException c) {
+      System.out.println("Original class not found for deserialization!");
+      c.printStackTrace();
+      return;
     }
   }
 }

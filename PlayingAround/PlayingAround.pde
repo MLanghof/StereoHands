@@ -14,6 +14,8 @@ float panY = 0;
 final int SIZE = 2048;
 
 boolean reducedSampleSize = true;
+
+String featurePath = "D:/Features/features.ser";
   
 
 void setup() {
@@ -91,6 +93,9 @@ void keyPressed()
   }
   if (key == 's') {
     processor.saveFeatures();
+  }
+  if (key == 'l') {
+    processor.loadFeatures();
   }
   
   if (keyCode == RIGHT) {
