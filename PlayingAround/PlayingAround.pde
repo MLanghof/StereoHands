@@ -19,7 +19,7 @@ String featurePath = "D:/Features/features.ser";
   
 
 void setup() {
-  size(2048, 1400, P2D);
+  size(2020, 1400, P2D);
   noLoop();
   
   processor =  new HandProcessor();

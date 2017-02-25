@@ -1,8 +1,5 @@
 import java.awt.event.KeyEvent;
 
-// Ugly, I know.
-final int SSS = s;
-
 
 // Amplitude threshold for accepting a maximum strength amplitude as ridge.
 float minRidgeStrength =  (RidgeDetector.a == 1 ? 12000 * pow(s/16, 1.7) : 80 * s); // Empirical
@@ -10,7 +7,7 @@ float minRidgeStrength =  (RidgeDetector.a == 1 ? 12000 * pow(s/16, 1.7) : 80 * 
 class RidgeDetector
 {
   // Filter kernel (DFT window) size
-  final int s = SSS;
+  final int s;
 
   // Image to process
   Step input;
@@ -23,8 +20,9 @@ class RidgeDetector
   // Aggregation area radius: 
   final static int a = 1;
 
-  public RidgeDetector()
+  public RidgeDetector(int s)
   {
+    this.s = s;
     subMat = new Mat(s, s, CvType.CV_32FC1);
   }
 
@@ -332,60 +330,5 @@ class Extracted
       Core.dft(complexF, out, Core.DFT_INVERSE | Core.DFT_SCALE, 0);
     }
     return out;
-  }
-}
-
-float angleThreshold = radians(15);
-
-float weightThreshold = 0; // TODO: TBD
-
-// Yay, empirical constants
-float minRidgeResponse = (RidgeDetector.a == 1 ? 15000 * pow(s/16, 1.7) : minRidgeStrength);
-
-//
-float minWrinkleResponse = 0.9 * minRidgeResponse;
-
-Feature featureMeMaybe(int x, int y, Extracted ex)
-{
-  if (ex.ridgeCount() != 2) return null;
-  
-  Feature feature = new Feature(x, y, ex.ridge1, ex.ridge2);
-  if (feature.ridge.response.mag() < minRidgeResponse) return null;
-  if (feature.wrinkle.response.mag() < minWrinkleResponse) return null;
-  
-  //if (feature.getAngle() < angleThreshold) return null;
-  if (feature.getWeight() < weightThreshold) return null;
-  return feature;
-}
-
-static class Feature implements java.io.Serializable
-{
-  int x, y;
-
-  Ridge ridge;
-  Ridge wrinkle;
-
-  public Feature(int x, int y, Ridge ridge1, Ridge ridge2)
-  {
-    this.x = x;
-    this.y = y;
-    // The wrinkle is always the lower frequency one
-    if (ridge1.f() > ridge2.f()) {
-      this.ridge = ridge1;
-      this.wrinkle = ridge2;
-    } else {
-      this.ridge = ridge2;
-      this.wrinkle = ridge1;
-    }
-  }
-
-  public float getAngle()
-  {
-    return PVector.angleBetween(ridge, wrinkle);
-  }
-
-  public float getWeight()
-  {
-    return ridge.strength() * wrinkle.strength();
   }
 }

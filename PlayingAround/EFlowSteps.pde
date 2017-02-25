@@ -3,7 +3,7 @@
 class FlowFinder extends CalculationStep
 {
   RidgeDetector ridger;
-  
+
   float[] flowAngle;
   float[] flowMag;
 
@@ -15,7 +15,7 @@ class FlowFinder extends CalculationStep
   public FlowFinder(Step below)
   {
     super(below.take);
-    ridger = new RidgeDetector();
+    ridger = new RidgeDetector(s);
     ridger.input = this;
   }
 
@@ -68,160 +68,37 @@ class FlowFinder extends CalculationStep
 }
 
 
-class FeatureStep extends CalculationStep
-{
-  RidgeDetector ridger;
-  
-  PImage modified;
-  ArrayList<Feature> features;
-  Ridge[] ridges;
-
-  // Features are searched with this spacing
-  // d=1 is almost indistinguishable but way more work than d=2
-  // d=4 is noticably worse but also MUCH faster
-  final int d = 4;
-  
-  final int s;
-  
-  int wd, hd;
-  
-  public FeatureStep(Step below)
-  {
-    super(below.take);
-    ridger = new RidgeDetector();
-    ridger.input = this;
-    s = ridger.s;
-  }
-
-  public void allocateResources()
-  {
-    wd = (w - s) / d;
-    hd = (h - s) / d;
-    modified = createImage(w, h, RGB);
-    features = new ArrayList<Feature>();
-    ridges = new Ridge[wd * hd];
-  }
-  
-  public void calculateImpl()
-  {
-    modified.loadPixels();
-    for (int yd = 0; yd < hd; yd++) {
-      for (int xd = 0; xd < wd; xd++)
-      {
-        int x = xd*d + s/2;
-        int y = yd*d + s/2;
-        Extracted ex = ridger.getRawFeatureAt(x, y);
-        
-        Feature f = featureMeMaybe(x, y, ex);
-        if (f != null) {
-          features.add(new Feature(x, y, ex.ridge1, ex.ridge2));
-        }
-        ridges[yd * wd + xd] = ex.ridge1;
-        
-        for (int ydd = 0; ydd < d; ydd++) {
-          for (int xdd = 0; xdd < d; xdd++) {
-            int pos = (y + ydd) * w + x + xdd;
-            modified.pixels[pos] = color(ridger.getAmplitudeAt(ex.out(), xdd + s/2, ydd + s/2));
-          }
-        }
-      }
-    }
-    modified.updatePixels();
-  }
-  
-  void drawImpl(PGraphics g)
-  {
-    g.image(modified, 0, 0);
-    g.pushMatrix();
-    if (!(keyPressed && (keyCode == KeyEvent.VK_SHIFT)))
-    {
-      if (!(keyPressed && (key == '3')))
-      {
-        g.strokeWeight(d / 20.0);
-        for (Feature f : features)
-        {
-          if (!onScreen(f.x, f.y, g)) continue;
-          if (!(keyPressed && (key == '2'))) {
-            g.stroke(0, 0, 200);
-            g.strokeWeight(d * f.ridge.strength() / 10);
-            drawFlowIndicator(g, f.x, f.y, f.ridge.strength() * d, f.ridge.angle());
-          }
-          if (!(keyPressed && (key == '1'))) {
-            g.stroke(200, 0, 0);
-            g.strokeWeight(d * f.wrinkle.strength() / 10);
-            drawFlowIndicator(g, f.x, f.y, f.wrinkle.strength() * d, f.wrinkle.angle());
-          }
-        }
-      }
-      else
-      {
-        g.scale(d, d);
-        g.stroke(0, 0, 200);
-        g.translate(s/d/2, s/d/2);
-        for (int y = screenStartY() / d; y < min(screenEndY() / d, hd); y++) {
-          for (int x = screenStartX() / d; x < min(screenEndX() / d, wd); x++)
-          {
-            int pos = y * wd + x;
-            Ridge ridge = ridges[pos];
-            if (ridge == null) continue;
-            g.strokeWeight(ridge.strength() / 10);
-            drawFlowIndicator(g, x, y, ridge.strength(), ridge.angle());
-          }
-        }
-      }
-    }
-    g.popMatrix();
-  }
-}
-
-/*class WrinkleAngleStep extends CalculationStep
-{
-  RidgeDetector ridger;
-  
-  final int s;
-  
-  public WrinkleAngleStep(Step below)
-  {
-    super(below.take);
-    ridger = new RidgeDetector();
-    ridger.input = this;
-    s = ridger.s;
-  }
-  
-}*/
-
-
 class FlowStep extends CalculationStep
 {
   SmoothNormalsStep below;
   //PVector[] flow;
   float[] flowAngle;
   float[] flowMag;
-  
+
   int k = 3;
-  
+
   public FlowStep(SmoothNormalsStep below)
   {
     super(below.take);
     this.below = below;
   }
-  
+
   public void allocateResources()
   {
     flowAngle = new float[w * h];
     flowMag = new float[w * h];
   }
-  
- 
+
+
   float v = 1.0 / 9.0;
   /*float[][] kernel = {{ 0, -1, 0 }, 
-                      { 1, 0, 1 }, 
-                      { 0, -1, 0 }};/**/
+   { 1, 0, 1 }, 
+   { 0, -1, 0 }};/**/
   float[][] kernel = {{ 0, 0, 0 }, 
-                      { 1, 0, 0 }, 
-                      { 0, 0, 0 }};/**/
-                      
-                      
+    { 1, 0, 0 }, 
+    { 0, 0, 0 }};/**/
+
+
   void calculateImpl()
   {
     below.calculate();
@@ -237,7 +114,7 @@ class FlowStep extends CalculationStep
             int pos = (y + ky)*w + (x + kx);
             PVector diff = PVector.sub(below.normals[pos], n0);
             diff.z = 0;
-            
+
             if (sum.dot(diff) < 0) {
               diff.mult(-1);
             }
@@ -245,13 +122,13 @@ class FlowStep extends CalculationStep
             sum.add(diff);
           }
         }/**/
-        
+
         flowAngle[pos0] = atan2(sum.y, sum.x) + HALF_PI;//color(sum);
         flowMag[pos0] = sum.mag() / sq(2 * k + 1);
       }
     }
   }
-  
+
   void drawImpl(PGraphics g)
   {
     int d = 1;
@@ -276,17 +153,17 @@ class FlowStep extends CalculationStep
 class SmoothNormalsStep extends CalculationStep
 {
   Step below;
-  
+
   PVector[] normals;
-  
+
   int k = 5;
-  
+
   public SmoothNormalsStep(Step below)
   {
     super(below.take);
     this.below = below;
   }
-  
+
   public void allocateResources()
   {
     normals = new PVector[w * h];
@@ -294,7 +171,7 @@ class SmoothNormalsStep extends CalculationStep
       normals[i] = take.normals[i].copy();
     }
   }
-  
+
   public void calculateImpl()
   {
     // Loop through every pixel in the image
@@ -311,12 +188,12 @@ class SmoothNormalsStep extends CalculationStep
           }
         }
         sum.mult(1.0 / sq(2*k+1));
-        
+
         n0.sub(sum);
       }
     }
   }
-  
+
   public void drawImpl(PGraphics g)
   {
     int d = 1;
@@ -325,7 +202,7 @@ class SmoothNormalsStep extends CalculationStep
     g.translate(0.5, 0.5);
     g.stroke(color(255, 170, 0));
     g.strokeWeight(d / 20.0);
-    
+
     println(screenStartY(), screenEndY(), screenStartX(), screenEndX());
     for (int y = screenStartY(); y < screenEndY(); y += d) {
       for (int x = screenStartX(); x < screenEndX(); x += d)
@@ -341,24 +218,24 @@ class SmoothNormalsStep extends CalculationStep
 class DownsampleFlowStep extends CalculationStep
 {
   FlowStep below;
-  
+
   float[] flowAngle;
   float[] flowMag;
-  
+
   // Downsample factor
   final int d = 16;
-  
+
   // Flows above this are ignored when aggregating
   final float maxThreshold = 0.1;
-  
+
   int wd, hd;
-  
+
   public DownsampleFlowStep(FlowStep below)
   {
     super(below.take);
     this.below = below;
   }
-  
+
   public void allocateResources()
   {
     wd = (w-1)/d;
@@ -366,7 +243,7 @@ class DownsampleFlowStep extends CalculationStep
     flowAngle = new float[wd * hd];
     flowMag = new float[wd * hd];
   }
-  
+
   public void calculateImpl()
   {
     below.calculate();
@@ -388,13 +265,13 @@ class DownsampleFlowStep extends CalculationStep
             }
           }
         }
-        
+
         flowAngle[pos0] = sum.heading();
         flowMag[pos0] = sum.mag() / d;
       }
     }
   }
-  
+
   void drawImpl(PGraphics g)
   {
     below.drawOn(g);

@@ -187,15 +187,15 @@ class Mouseover extends Step
   PImage mouseDetail;
   
   // Window size
-  final int s;
+  final int ts;
   
   public Mouseover(Take take)
   {
     super(take);
-    ridger = new RidgeDetector();
-    s = ridger.s;
+    ridger = new RidgeDetector(s);
+    ts = ridger.s;
     ridger.input = this;
-    mouseDetail = createImage(s, s, RGB);
+    mouseDetail = createImage(ts, ts, RGB);
   }
   
   public void drawOn(PGraphics g)
@@ -209,7 +209,7 @@ class Mouseover extends Step
   {
     int imgX = (int)imageX(mouseX);
     int imgY = (int)imageY(mouseY);
-    if (imgX < s/2 || imgY < s/2 || imgX >= w-s/2 || imgY >= h-s/2) return;
+    if (imgX < ts/2 || imgY < ts/2 || imgX >= w-ts/2 || imgY >= h-ts/2) return;
 
     if (keyPressed && (keyCode == KeyEvent.VK_SHIFT))
     {
@@ -217,7 +217,7 @@ class Mouseover extends Step
       Mat complexMat = ridger.getFrequencySpaceAt(imgX, imgY);
       Mat newComplexMat = ridger.isolateTwoRidgeFrequencies(complexMat);
       fillMouseImageDC(newComplexMat, 0, 0);
-      g.image(mouseDetail, imgX-s/2, imgY-s/2);
+      g.image(mouseDetail, imgX-ts/2, imgY-ts/2);
     }
     else
     {
@@ -239,12 +239,12 @@ class Mouseover extends Step
       g.scale(1.0/2);
       int scale = 8;
       g.scale(scale);
-      g.image(mouseDetail, -s, -s);
+      g.image(mouseDetail, -ts, -ts);
       g.stroke(0);
       g.strokeWeight(0.1);
       g.noFill();
-      g.rect(-s, -s, s, s);
-      g.translate(-s/2 + 0.5, -s/2 + 0.5);
+      g.rect(-ts, -ts, ts, ts);
+      g.translate(-ts/2 + 0.5, -ts/2 + 0.5);
       g.stroke(color(0, 200, 0, 100));
       // Apparently we're using rectMode CENTER?
       g.ellipse(0, 0, 2*minDftMagRidge, 2*minDftMagRidge);
@@ -259,12 +259,12 @@ class Mouseover extends Step
     mouseDetail.loadPixels();
     //colorMode(HSB, TWO_PI, 1, 1);
     float dc = ridger.getAmplitudeAt(mat, 0, 0);
-    for (int ys = 0; ys < s; ys++) {
-      for (int xs = 0; xs < s; xs++) {
-        int pos = ((ys + s/2) % s) * s + (xs + s/2) % s;
+    for (int ys = 0; ys < ts; ys++) {
+      for (int xs = 0; xs < ts; xs++) {
+        int pos = ((ys + ts/2) % ts) * ts + (xs + ts/2) % ts;
         float mag = ridger.getAmplitudeAt(mat, xs, ys);
         float val = rescaleAmplitude(mag / dc) * 255;
-        if ((xs == (highlightX + s) % s) && (ys == (higlightY + s) % s)) {
+        if ((xs == (highlightX + ts) % ts) && (ys == (higlightY + ts) % ts)) {
           mouseDetail.pixels[pos] = color(0, val, 0);
         } else {
           mouseDetail.pixels[pos] = color(val);//color(response.heading() + PI, 0.5, val);
@@ -283,9 +283,9 @@ class Mouseover extends Step
   void fillMouseImage(Mat mat)
   {
     mouseDetail.loadPixels();
-    for (int ys = 0; ys < s; ys++) {
-      for (int xs = 0; xs < s; xs++) {
-        int pos = ys * s + xs;
+    for (int ys = 0; ys < ts; ys++) {
+      for (int xs = 0; xs < ts; xs++) {
+        int pos = ys * ts + xs;
         float mag = ridger.getAmplitudeAt(mat, xs, ys);
         mouseDetail.pixels[pos] = color(mag);
       }
