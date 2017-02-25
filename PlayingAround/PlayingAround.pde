@@ -11,9 +11,10 @@ float panX = 0;
 float panY = 0;
 
 
-final int SIZE = 2048;
-
 boolean reducedSampleSize = true;
+// Disabling these substantially improves load times
+boolean loadAlbedo = false;
+boolean loadNormals = false;
 
 String featurePath = "D:/Features/features.ser";
   

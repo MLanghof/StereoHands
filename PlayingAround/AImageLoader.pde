@@ -1,66 +1,5 @@
 import java.awt.Rectangle;
 
-class ImageLoader
-{
-  public PImage openFile(String path)
-  {
-    if (path.endsWith(".mat")) {
-      return loadAlbedo(path);
-    } else {
-      return loadImage(path);
-    }
-  }
-  
-  PImage loadAlbedo(String path)
-  {
-    DoubleBuffer db = getMatDoubles(path);
-    if (db == null) return null;
-    
-    PImage img = createImage(SIZE, SIZE, RGB);
-    img.loadPixels();
-    for (int i = 0; i < sq(SIZE); i++)
-    {
-      color c = getColor(path, (float)db.get());
-      img.pixels[i] = c;
-    }
-    img.updatePixels();
-    return img;
-  }
-  
-  int DATA_START = 420 * 8;
-  int DATA_LENGTH = SIZE * SIZE * 8;
-  int TOTAL_LENGTH = DATA_START + DATA_LENGTH;
-  
-  public DoubleBuffer getMatDoubles(String path)
-  {
-    byte[] matData = loadBytes(path);
-    if (matData.length < TOTAL_LENGTH) return null;
-    return ByteBuffer.wrap(matData, DATA_START, DATA_LENGTH).order(ByteOrder.LITTLE_ENDIAN).asDoubleBuffer();
-  }
-  
-  // Produces a color scale appropriate for the file opened
-  color getColor(String path, float value)
-  {
-    // Default (a.mat)
-    color ret = color((int)(255 * value));
-    
-    // Vectors
-    
-    if (path.endsWith("px.mat") || path.endsWith("py.mat"))
-    {
-      colorMode(HSB, 1.0f);
-      ret = color(value, 1.0f, (abs(value)));
-      colorMode(RGB, 255);
-    }
-    if (path.endsWith("pz.mat")) {
-      ret = color(255 * 1.4 * (1.0 - value));
-    }
-    return ret;
-  }
-  
-  
-}
-
 class Take
 {
   public String path;
@@ -69,39 +8,49 @@ class Take
   public PImage albedo;
   public PVector[] normals;
   
-  ImageLoader loader = new ImageLoader(); // Screw processing for not allowing static classes...
-  
   Rectangle roi;
+  
+  final String shapeIndexPath = "/si.bmp";
+  final String albedoPath = "/a.mat";
+  final String pxPath = "/px.mat";
+  final String pyPath = "/py.mat";
+  final String pzPath = "/pz.mat";
+
+  // Constants for .mat files
+  final int SIZE = 2048;
+  final int DATA_START = 420 * 8;
+  final int DATA_LENGTH = SIZE * SIZE * 8;
+  final int TOTAL_LENGTH = DATA_START + DATA_LENGTH;
   
   public Take(String folderPath)
   {
     this.path = folderPath;
-    shapeIndex = loadImage(folderPath + "/si.bmp");
+    shapeIndex = loadImage(folderPath + shapeIndexPath);
     roi = getRoi(shapeIndex);
     shapeIndex = shapeIndex.get(roi.x, roi.y, roi.width, roi.height);
-    albedo = loadAlbedo(folderPath + "/a.mat");
-    //normals = loadNormals(folderPath);
+    if (loadAlbedo) albedo = loadAlbedo(folderPath + albedoPath);
+    if (loadNormals) normals = loadNormals(folderPath);
   }
   
   public PImage loadAlbedo(String path)
   {
-    DoubleBuffer db = loader.getMatDoubles(path);
+    DoubleBuffer db = readDotMatFile(path);
     PImage ret = createImage(roi.width, roi.height, RGB);
+    
     // Find maximum value
     float max = 0;
     for (int i = 0; i < sq(SIZE); i++) {
       max = max((float)db.get(), max);
     }
     db.rewind();
+    
     // Write data to image
     ret.loadPixels();
-    for (int i = 0; i < sq(SIZE); i++)
-    {
-      int x = i % SIZE;
-      int y = i / SIZE;
-      float val = (float)db.get();
-      if (roi.contains(x, y)) {
-        ret.pixels[(x - roi.x) + (y - roi.y) * roi.width] = color(val/max * 255);
+    for (int y = 0; y < roi.height; y++) {
+      for (int x = 0; x < roi.width; x++)
+      {
+        float val = (float)db.get((y + roi.y) * SIZE + (x + roi.x));
+        ret.pixels[y * roi.width + x] = color(val/max * 255);
       }
     }
     ret.updatePixels();
@@ -110,18 +59,17 @@ class Take
   
   public PVector[] loadNormals(String folderPath)
   {
-    DoubleBuffer dbX = loader.getMatDoubles(folderPath + "/px.mat");
-    DoubleBuffer dbY = loader.getMatDoubles(folderPath + "/py.mat");
-    DoubleBuffer dbZ = loader.getMatDoubles(folderPath + "/pz.mat");
+    DoubleBuffer dbX = readDotMatFile(folderPath + pxPath);
+    DoubleBuffer dbY = readDotMatFile(folderPath + pyPath);
+    DoubleBuffer dbZ = readDotMatFile(folderPath + pzPath);
     
     PVector[] ret = new PVector[getArea()];
-    for (int i = 0; i < sq(SIZE); i++)
-    {
-      int x = i % SIZE;
-      int y = i / SIZE;
-      PVector val = new PVector((float)dbX.get(), -(float)dbY.get(), (float)dbZ.get());
-      if (roi.contains(x, y)) {
-        ret[(x - roi.x) + (y - roi.y) * roi.width] = val;
+    for (int y = 0; y < roi.height; y++) {
+      for (int x = 0; x < roi.width; x++)
+      {
+        int bufferIndex = (y + roi.y) * SIZE + (x + roi.x);
+        PVector val = new PVector((float)dbX.get(bufferIndex), -(float)dbY.get(bufferIndex), (float)dbZ.get(bufferIndex));
+        ret[y * roi.width + x] = val;
       }
     }
     return ret;
@@ -148,5 +96,12 @@ class Take
   int getArea()
   {
     return roi.width * roi.height;
+  }
+  
+  public DoubleBuffer readDotMatFile(String path)
+  { 
+    byte[] matData = loadBytes(path);
+    if (matData.length < TOTAL_LENGTH) return null;
+    return ByteBuffer.wrap(matData, DATA_START, DATA_LENGTH).order(ByteOrder.LITTLE_ENDIAN).asDoubleBuffer();
   }
 }

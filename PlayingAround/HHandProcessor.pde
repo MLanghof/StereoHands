@@ -27,16 +27,18 @@ class HandProcessor
     stepSelector = new ObjectSelectorBar<Step>(y); y += 40;
     paramSelector = new SimpleSelectorBar(8, y);
     
-    openFile(); //<>//
-    stepSelector.add(new AlbedoStep(currentTake));
+    openFile();
+    if (loadAlbedo) stepSelector.add(new AlbedoStep(currentTake));
     shapeIndexStep = new ShapeIndexStep(currentTake);
     stepSelector.add(shapeIndexStep);
-    stepSelector.add(new NormalsStep(currentTake));
-    smoothNormalsStep = new SmoothNormalsStep(shapeIndexStep);
-    stepSelector.add(smoothNormalsStep);
-    flowStep = new FlowStep(smoothNormalsStep);
-    stepSelector.add(flowStep);
-    stepSelector.add(new DownsampleFlowStep(flowStep));
+    if (loadNormals) {
+      stepSelector.add(new NormalsStep(currentTake));
+      smoothNormalsStep = new SmoothNormalsStep(shapeIndexStep);
+      stepSelector.add(smoothNormalsStep);
+      flowStep = new FlowStep(smoothNormalsStep);
+      stepSelector.add(flowStep);
+      stepSelector.add(new DownsampleFlowStep(flowStep));
+    }
     dctStep = new DftStep(shapeIndexStep);
     stepSelector.add(dctStep);
     stepSelector.add(new FlowFromDftStep(dctStep));
@@ -122,6 +124,7 @@ class HandProcessor
   
   void openFile()
   {
+    int m1 = millis();
     String path = fileSelector.getFile().getPath();
     if (currentTake == null || currentTake.path != path) {
       currentTake = new Take(path);
