@@ -16,6 +16,10 @@ boolean reducedSampleSize = true;
 boolean loadAlbedo = false;
 boolean loadNormals = false;
 
+float armCutPos = 0.75;
+boolean cutArm = true;
+boolean debugArmStart = false;
+
 String featurePath = "D:/Features/features.ser";
   
 

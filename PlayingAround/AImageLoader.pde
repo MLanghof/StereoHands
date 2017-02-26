@@ -25,8 +25,12 @@ class Take
   public Take(String folderPath)
   {
     this.path = folderPath;
+    // Load shape index and find ROI from it
     shapeIndex = loadImage(folderPath + shapeIndexPath);
     roi = getRoi(shapeIndex);
+    // Reduce to base of hand
+    if (cutArm) roi = cutOffArm(roi, shapeIndex);
+    // Trim shape index and load remaining files
     shapeIndex = shapeIndex.get(roi.x, roi.y, roi.width, roi.height);
     if (loadAlbedo) albedo = loadAlbedo(folderPath + albedoPath);
     if (loadNormals) normals = loadNormals(folderPath);
@@ -91,6 +95,63 @@ class Take
     }
     println("ROI of take: [", minX, ",", minY, "] - [", maxX, ",", maxY, "]");
     return new Rectangle(minX, minY, maxX - minX, maxY - minY);
+  }
+  
+  private Rectangle cutOffArm(Rectangle roi, PImage image)
+  {
+    image.loadPixels();
+    // First, go downwards from a certain point
+    int startX = round(roi.x + 0.75 * roi.width);
+    int maxY = -1;
+    for (int y = roi.y; y < roi.y + roi.width; y++)
+    {
+      int index = y * SIZE + startX;
+      if (isForeground(image, index)) {
+        maxY = y;
+        break;
+      }
+      if (debugArmStart) image.pixels[index] = color(0, 255, 0); 
+    }
+    if (maxY == -1) {
+      println("Couldn't determine start of arm! Are you sure this picture contains a hand?");
+      return roi;
+    }
+    
+    // Then try to keep descending to the right along the contour
+    int maxYX = startX;
+    int y = maxY;
+    int x;
+    for (x = startX; x < roi.x + roi.width; x++) {
+      // Start a bit higher to account for noise      
+      for (y = max(0, y - 2); y < roi.y + roi.height; y++) {
+        if (isForeground(image, y * SIZE + x)) {
+          break;
+        }
+      }
+      if (debugArmStart) image.pixels[y * SIZE + x] = color(255, 0, 0);
+      
+      if (y >= maxY) {
+        maxY = y;
+        maxYX = x;
+      }
+      
+      // If we're ascending, cut it off
+      if ((y < maxY) && (x - maxYX > 2)) {
+        break;
+      }
+    }
+    if (x == roi.x + roi.width)
+    {  
+      println("Couldn't determine start of arm!");
+      return roi;
+    }
+    if (debugArmStart) image.updatePixels();
+    return new Rectangle(roi.x, roi.y, maxYX - roi.x, roi.height);
+  }
+  
+  boolean isForeground(PImage image, int index)
+  {
+    return image.pixels[index] != color(0);
   }
   
   int getArea()
