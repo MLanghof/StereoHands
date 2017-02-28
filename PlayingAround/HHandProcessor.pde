@@ -146,6 +146,12 @@ class HandProcessor
     openFile();
   }
   
+  void previousInput()
+  {
+    fileSelector.recursivePrevious();
+    openFile();
+  }
+  
   void saveFeatures()
   {
     try {

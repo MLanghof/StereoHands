@@ -60,6 +60,10 @@ abstract class SelectorBar
   {
     return selected == getMax() - 1;
   }
+  public boolean isMinSelected()
+  {
+    return selected == 0;
+  }
 }
 
 class SimpleSelectorBar extends SelectorBar
@@ -183,6 +187,24 @@ class FileSelectorBar extends SelectorBar
       return false;
     }
     selected++;
+    update();
+    if (mustDescend()) {
+      child = new FileSelectorBar(getSelected(), Y + HEIGHT);
+    }
+    return true;
+  }
+  
+  // Selects the previous file recursively (DFS).
+  // Returns whether another file could be chosen at this level or below.
+  public boolean recursivePrevious()
+  {
+    if (mustDescend() && child.recursivePrevious()) {
+      return true;
+    }
+    if (isMinSelected()) {
+      return false;
+    }
+    selected--;
     update();
     if (mustDescend()) {
       child = new FileSelectorBar(getSelected(), Y + HEIGHT);

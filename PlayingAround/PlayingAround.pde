@@ -106,6 +106,9 @@ void keyPressed()
   if (keyCode == RIGHT) {
     processor.nextInput();
   }
+  if (keyCode == LEFT) {
+    processor.previousInput();
+  }
   redraw();
 }
 
