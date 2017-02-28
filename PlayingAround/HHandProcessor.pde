@@ -82,8 +82,7 @@ class HandProcessor
   }
   
   public void saveImageFull() {
-    String name = fileSelector.getFile().getPath();
-    name = name.replaceAll("[^a-zA-Z0-9\\._]+", "_");
+    String name = fileSelector.getUsableFileNamePath();
     name += "_" + stepSelector.getCurrent().toString();
     saveImage("Results/" + name + ".png");
   }
@@ -140,22 +139,29 @@ class HandProcessor
     return uiSelector.getCurrentIndex() == 0;
   }
   
-  void nextInput()
+  boolean nextInput()
   {
-    fileSelector.recursiveNext();
-    openFile();
+    if (fileSelector.recursiveNext()) {
+      openFile();
+      return true;
+    }
+    return false;
   }
   
-  void previousInput()
+  boolean previousInput()
   {
-    fileSelector.recursivePrevious();
-    openFile();
+    if (fileSelector.recursivePrevious()) {
+      openFile();
+      return true;
+    }
+    return false;
   }
   
-  void saveFeatures()
+  // TODO: Move to featureStep?
+  void saveFeatures(String path)
   {
     try {
-      FileOutputStream fileOut = new FileOutputStream(featurePath);
+      FileOutputStream fileOut = new FileOutputStream(path);
       ObjectOutputStream out = new ObjectOutputStream(fileOut);
       out.writeObject(featureStep.features);
       out.close();
@@ -166,10 +172,10 @@ class HandProcessor
     }
   }
   
-  void loadFeatures()
+  void loadFeatures(String path)
   {
     try {
-      FileInputStream fileIn = new FileInputStream(featurePath);
+      FileInputStream fileIn = new FileInputStream(path);
       ObjectInputStream in = new ObjectInputStream(fileIn);
       featureStep.features = (ArrayList<Feature>)in.readObject();
       featureStep.calculated = true;
@@ -183,6 +189,17 @@ class HandProcessor
       System.out.println("Original class not found for deserialization!");
       c.printStackTrace();
       return;
+    }
+  }
+  
+  void processAndSaveAllHands()
+  {
+    
+    for (boolean haveInput = true; haveInput; haveInput = nextInput()) {
+      println("Processing " + fileSelector.getFile().getPath());
+      featureStep.calculate();
+      String path = featuresFolder + fileSelector.getUsableFileNamePath() + ".ser";
+      saveFeatures(path);
     }
   }
 }

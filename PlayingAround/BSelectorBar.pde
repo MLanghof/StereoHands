@@ -229,6 +229,11 @@ class FileSelectorBar extends SelectorBar
     //return files;
     return newFiles.toArray(new File[0]); // This is one weird function
   }
+  
+  public String getUsableFileNamePath()
+  {
+    return getFile().getPath().replaceAll("[^a-zA-Z0-9\\._]+", "_");
+  }
 }
 
 class ObjectSelectorBar<T> extends SelectorBar

@@ -21,7 +21,7 @@ boolean cutArm = true;
 boolean debugArmStart = false;
 
 String featurePath = "D:/Features/features.ser";
-  
+String featuresFolder = "D:/Features/";  
 
 void setup() {
   size(2020, 1400, P2D);
@@ -97,10 +97,13 @@ void keyPressed()
     processor.saveImageFull();
   }
   if (key == 's') {
-    processor.saveFeatures();
+    processor.saveFeatures(featurePath);
   }
   if (key == 'l') {
-    processor.loadFeatures();
+    processor.loadFeatures(featurePath);
+  }
+  if (key == 'p') {
+    processor.processAndSaveAllHands();
   }
   
   if (keyCode == RIGHT) {
