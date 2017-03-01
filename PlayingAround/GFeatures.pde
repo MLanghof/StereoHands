@@ -42,6 +42,11 @@ static class Feature implements java.io.Serializable
     }
   }
 
+  public PVector getPos()
+  {
+    return new PVector(x, y, 0);
+  }
+  
   public float getAngle()
   {
     return PVector.angleBetween(ridge, wrinkle);
