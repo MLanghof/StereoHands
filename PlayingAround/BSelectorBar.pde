@@ -214,14 +214,14 @@ class FileSelectorBar extends SelectorBar
   
   private File[] filterFiles(File[] files)
   {
-    if (!reducedSampleSize) return files;
+    if (!(reducedSampleSize || ignoreNIR)) return files;
     ArrayList<File> newFiles = new ArrayList<File>();
     for (File file : files) {
       String name = file.getName();
       // Don't care about NIR
-      if (match(name, "NIR") != null) continue;
+      if (ignoreNIR && (match(name, "NIR") != null)) continue;
       // Only use image 001 for now.
-      if ((match(name, "00\\d") != null) && (match(name, "001") == null)) continue;
+      if (reducedSampleSize && (match(name, "00\\d") != null) && (match(name, "001") == null)) continue;
       newFiles.add(file);
     }
     // TODO: This is a real danger

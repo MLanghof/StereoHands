@@ -31,6 +31,7 @@ class HandProcessor
     if (loadAlbedo) stepSelector.add(new AlbedoStep(currentTake));
     shapeIndexStep = new ShapeIndexStep(currentTake);
     stepSelector.add(shapeIndexStep);
+    stepSelector.add(new LandmarksStep(currentTake));
     if (loadNormals) {
       stepSelector.add(new NormalsStep(currentTake));
       smoothNormalsStep = new SmoothNormalsStep(shapeIndexStep);

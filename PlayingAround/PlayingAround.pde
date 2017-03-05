@@ -12,13 +12,20 @@ float panY = 0;
 
 
 boolean reducedSampleSize = true;
+boolean ignoreNIR = true;
 // Disabling these substantially improves load times
-boolean loadAlbedo = false;
+boolean loadAlbedo = true;
 boolean loadNormals = false;
 
-float armCutPos = 0.75;
+float armCutPos = 0.75; // as fraction of image width
 boolean cutArm = true;
-boolean debugArmStart = false;
+boolean debugArmStart = true;
+
+float gapExclusionHeight = 0.1; // as fraction of image height
+int minArmThickness = 200; // in pixels
+int minFingerThickness = 50; // in pixels
+
+float albedoThreshold = 0.2;
 
 String featurePath = "D:/Features/features.ser";
 String featuresFolder = "D:/Features/";  
