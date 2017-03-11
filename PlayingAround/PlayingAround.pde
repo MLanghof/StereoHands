@@ -1,8 +1,36 @@
 import java.nio.*;
 
 import gab.opencv.*;
-
 import org.opencv.core.*;
+
+////////////////////////////////////////////////////////////////////////
+
+// Input selection
+final boolean reducedSampleSize = true;
+final boolean ignoreNIR = true;
+// Disabling these substantially improves load times
+final boolean loadAlbedo = false;
+final boolean loadNormals = false;
+
+// Preprocessing constants
+final float armCutPos = 0.75; // as fraction of image width
+final boolean cutArm = true;
+final boolean debugArmStart = true;
+
+final float gapExclusionHeight = 0.1; // as fraction of image height
+final int minArmThickness = 200; // in pixels
+final int minFingerThickness = 50; // in pixels
+
+final float albedoThreshold = 0.2;
+
+// Paths
+final String baseFolder = "D:/PSHands/";
+
+final String resultImageFolder = "Results/";
+final String featurePath = "D:/Features/features.ser";
+final String featuresFolder = "D:/Features/";
+
+////////////////////////////////////////////////////////////////////////
                     
 HandProcessor processor;
 
@@ -10,25 +38,6 @@ float zoom = 0.9f;
 float panX = 0;
 float panY = 0;
 
-
-boolean reducedSampleSize = true;
-boolean ignoreNIR = true;
-// Disabling these substantially improves load times
-boolean loadAlbedo = true;
-boolean loadNormals = false;
-
-float armCutPos = 0.75; // as fraction of image width
-boolean cutArm = true;
-boolean debugArmStart = true;
-
-float gapExclusionHeight = 0.1; // as fraction of image height
-int minArmThickness = 200; // in pixels
-int minFingerThickness = 50; // in pixels
-
-float albedoThreshold = 0.2;
-
-String featurePath = "D:/Features/features.ser";
-String featuresFolder = "D:/Features/";  
 
 void setup() {
   size(2020, 1400, P2D);

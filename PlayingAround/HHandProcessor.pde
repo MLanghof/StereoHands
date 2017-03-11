@@ -23,7 +23,7 @@ class HandProcessor
     int y = 0;
     uiSelector = new SimpleSelectorBar(2, y);
     uiSelector.HEIGHT = 20; y += 25;
-    fileSelector = new FileSelectorBar(new File("D:/PSHands/"), y); y += 3*40 + 10;
+    fileSelector = new FileSelectorBar(new File(baseFolder), y); y += 3*40 + 10;
     stepSelector = new ObjectSelectorBar<Step>(y); y += 40;
     paramSelector = new SimpleSelectorBar(8, y);
     
@@ -85,7 +85,7 @@ class HandProcessor
   public void saveImageFull() {
     String name = fileSelector.getUsableFileNamePath();
     name += "_" + stepSelector.getCurrent().toString();
-    saveImage("Results/" + name + ".png");
+    saveImage(resultImageFolder + name + ".png");
   }
   
   public void saveImage(String path)
