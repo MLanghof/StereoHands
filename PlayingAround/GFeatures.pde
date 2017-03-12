@@ -1,4 +1,4 @@
-float angleThreshold = radians(15);
+float angleThreshold = radians(10);
 
 float weightThreshold = 0; // TODO: TBD
 
@@ -16,7 +16,7 @@ Feature featureMeMaybe(int x, int y, Extracted ex)
   if (feature.ridge.response.mag() < minRidgeResponse) return null;
   if (feature.wrinkle.response.mag() < minWrinkleResponse) return null;
   
-  //if (feature.getAngle() < angleThreshold) return null;
+  if (feature.getAngle() < angleThreshold) return null;
   if (feature.getWeight() < weightThreshold) return null;
   return feature;
 }
@@ -127,6 +127,7 @@ class FeatureStep extends CalculationStep
     g.pushMatrix();
     if (!(keyPressed && (keyCode == KeyEvent.VK_SHIFT)))
     {
+      g.translate(d/2, d/2);
       if (!(keyPressed && (key == '3')))
       {
         g.strokeWeight(d / 20.0);

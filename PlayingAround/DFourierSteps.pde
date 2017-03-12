@@ -4,8 +4,9 @@ final int s = 16;
 
 // TODO: This is debatable, 6 is also a good idea at times
 final float maxRidgeInterval = 5.65; // Maximum pixel distance between ridge tops that is considered a ridge
-final float minRidgeInterval = 2.3; // * sqrt(2); // Minimum...
+final float minRidgeInterval = 2.6; // * sqrt(2); // Minimum...
 final float maxWrinkleInterval = 12;
+final float minWrinkleInterval = 3;
 
 final float minRidgeFrequency = 1.0 / maxRidgeInterval;
 // s / 2 periods in s -> f = 1/2    -> mag = s;
@@ -18,6 +19,8 @@ final float maxDftMagRidge = maxRidgeFrequency * s;
 
 final float minWrinkleFrequency = 1.0 / maxWrinkleInterval;
 final float minDftMagWrinkle = minWrinkleFrequency * s;
+final float maxWrinkleFrequency = 1.0 / minWrinkleInterval;
+final float maxDftMagWrinkle = maxWrinkleFrequency * s;
 
 // This is necessary to actually load the OpenCV library
 OpenCV cv = new OpenCV(this, s, s);

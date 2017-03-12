@@ -114,11 +114,12 @@ class RidgeDetector
         int ys = (y + j) % s;
         if ((xs == 0) && (ys == 0)) continue; // Ignore DC
         double[] tmp = mat.get(y, x);
-        rx += tmp[0];
-        ry += tmp[1];
+        double weight = sqrt((abs(i)+1) * (abs(j)+1));
+        rx += tmp[0] / weight;
+        ry += tmp[1] / weight;
       }
     }
-    return new PVector((float)rx, (float)ry);
+    return new PVector((float)rx*1.8, (float)ry*1.8);
   }
   
   float getAmplitudeAround(Mat mat, int x, int y)
