@@ -165,3 +165,15 @@ class FeatureStep extends CalculationStep
     g.popMatrix();
   }
 }
+
+class HandDescriptor
+{
+  ArrayList<Feature> features;
+  Landmarks landmarks;
+  
+  public HandDescriptor(ArrayList features, Landmarks landmarks)
+  {
+    this.features = features;
+    this.landmarks = landmarks;
+  }
+}

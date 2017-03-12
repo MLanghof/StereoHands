@@ -173,22 +173,116 @@ public boolean isForeground(PImage image, int index)
   return !isBackground(image, index);
 }
 
-class LandmarksStep extends CalculationStep
+// TODO: Refactor into step?
+class Landmarks
 {
-  PImage image;
-
   public PVector armThumb;
   public PVector armOther;
   public PVector gapThumb;
   public PVector gapIM;
   public PVector gapMR;
   public PVector gapRP;
+  
+  // See GeoGebra sketch
+  PVector Mh, Mt, Mw, Ot, Oo, Et, It, Ip;
+  
+  public boolean complete()
+  {
+    if ((armThumb == null) || (armOther == null) || (gapThumb == null) ||
+      (gapIM == null) || (gapMR == null) || (gapRP == null)) {
+      return false;
+    }
+    return true;
+  }
+  
+  void calculateCorners()
+  {
+    Mw = PVector.add(armThumb, armOther).mult(0.5);
+    Mt = PVector.add(gapIM, gapThumb).mult(0.5);
+    Mh = PVector.add(gapRP, gapThumb).mult(0.5);
+    Oo = PVector.add(gapRP, PVector.sub(gapRP, gapMR));
+    Ot = PVector.add(gapIM, PVector.sub(gapIM, gapMR)); // TODO: This is simplified, see GG
+    
+    Ip = intersectEnds(Mw, gapMR, armOther, Mt);
+    It = intersectDirections(Mh, PVector.sub(gapIM, gapMR), armOther, PVector.sub(armOther, Mt));
+    
+    Et = intersectEnds(Mh, It, gapThumb, Ot);
+  }
+  
+  PVector intersectEnds(PVector a, PVector aEnd, PVector b, PVector bEnd)
+  {
+    PVector da = PVector.sub(aEnd, a);
+    PVector db = PVector.sub(bEnd, b);
+    return intersectDirections(a, da, b, db);
+  }
+  
+  PVector intersectDirections(PVector a, PVector da, PVector b, PVector db)
+  {
+    float parallelRate = da.x * db.y - da.y * db.x;
+    if (abs(parallelRate) < EPSILON) return new PVector(a.x, a.y);
+    if (abs(db.y) > EPSILON) {
+      float x = (b.x - a.x + db.x/db.y * (a.y - b.y)) / parallelRate * db.y;
+      return PVector.add(a, da.mult(x));
+    }
+    if (abs(db.x) > EPSILON) {
+      float x = -(b.y - a.y + db.y/db.x * (a.x - b.x)) / parallelRate * db.x;
+      return PVector.add(a, da.mult(x));
+    }
+    // Well if both are (almost) zero then there's nothing to intersect, duh.
+    return new PVector(a.x, a.y);
+  }
+
+  public void drawOn(PGraphics g)
+  {
+    g.stroke(255, 0, 0);
+    g.strokeWeight(1);
+    g.noFill();
+    drawIndicator(g, armThumb);
+    drawIndicator(g, armOther);
+    drawIndicator(g, gapThumb);
+    drawIndicator(g, gapIM);
+    drawIndicator(g, gapMR);
+    drawIndicator(g, gapRP);
+    
+    g.stroke(0, 127, 255);
+    g.line(armOther.x, armOther.y, Mw.x, Mw.y);
+    g.line(Mw.x, Mw.y, Ip.x, Ip.y);
+    g.line(Ip.x, Ip.y, It.x, It.y);
+    g.line(It.x, It.y, Et.x, Et.y);
+    g.line(Et.x, Et.y, Ot.x, Ot.y);
+    g.line(Ot.x, Ot.y, gapMR.x, gapMR.y);
+    g.line(gapMR.x, gapMR.y, Oo.x, Oo.y);
+    g.line(Oo.x, Oo.y, armOther.x, armOther.y);
+    g.stroke(0, 0, 255);
+    drawIndicator(g, Ip, "Ip");
+    drawIndicator(g, Mt, "Mt");
+    drawIndicator(g, Mw, "Mw");
+  }
+
+  public void drawIndicator(PGraphics g, PVector p)
+  {
+    drawIndicator(g, p, null);
+  }
+  public void drawIndicator(PGraphics g, PVector p, String text)
+  {
+    if (p == null) return;
+    g.ellipse(p.x, p.y, 10, 10);
+    if (text != null) g.text(text, p.x+6, p.y+20);
+  }
+}
+
+class LandmarksStep extends CalculationStep
+{
+  PImage image;
+  
+  Landmarks lm;
 
   boolean complete = false;
 
   public LandmarksStep(Take take)
   {
     super(take);
+    lm = new Landmarks();
   }
 
   public void setTake(Take take)
@@ -200,7 +294,7 @@ class LandmarksStep extends CalculationStep
   public void calculateImpl()
   {
     complete = findLandmarksInInput();
-    calculateCorners();
+    lm.calculateCorners();
   }
 
   public boolean findLandmarksInInput()
@@ -212,24 +306,17 @@ class LandmarksStep extends CalculationStep
     findGapLandmarks();
 
     image.updatePixels();
+    
+    if (!lm.complete()) return false;
 
-    if ((armThumb == null) || (armOther == null) || (gapThumb == null) ||
-      (gapIM == null) || (gapMR == null) || (gapRP == null)) {
-      return false;
-    }
     // Assert thumb is higher than the others
-    if (gapThumb.y > gapIM.y) return false;
+    if (lm.gapThumb.y > lm.gapIM.y) return false;
     return false;
   }
 
   public void nullLandmarks()
   {
-    armThumb = null;
-    armOther = null;
-    gapThumb = null;
-    gapIM = null;
-    gapMR = null;
-    gapRP = null;
+    lm = new Landmarks();
   }
 
   private void findArmLandmarks()
@@ -247,11 +334,11 @@ class LandmarksStep extends CalculationStep
     }
     while (dy < minArmThickness && y != -1)
     {
-      armThumb = new PVector(x, y);
+      lm.armThumb = new PVector(x, y);
       y = findNextBackground(x, y);
       if (y == -1) return;
-      armOther = new PVector(x, y);
-      dy = (int)(armOther.y - armThumb.y);
+      lm.armOther = new PVector(x, y);
+      dy = (int)(lm.armOther.y - lm.armThumb.y);
       y = findNextForeground(x, y);
     }
   }
@@ -287,16 +374,16 @@ class LandmarksStep extends CalculationStep
 
     if (foundGaps.size() < 4) return;
     // Rightmost is always the thumb gap
-    gapThumb = foundGaps.remove(0);
+    lm.gapThumb = foundGaps.remove(0);
     // Manual sorting... Because java straight up refuses my Comparator<PVector>.
     /*List<PVector> sortedList = new ArrayList<PVector>();
      sortedList.add(foundGaps.remove(0));
      PVector v2 = foundGaps.remove(0);
      //if (v2 <*/
     java.util.Collections.sort(foundGaps, new GapYComparer());
-    gapIM = foundGaps.remove(0);
-    gapMR = foundGaps.remove(0);
-    gapRP = foundGaps.remove(0);
+    lm.gapIM = foundGaps.remove(0);
+    lm.gapMR = foundGaps.remove(0);
+    lm.gapRP = foundGaps.remove(0);
   }
 
   private boolean isIsolatedBackground(int x, int y)
@@ -362,85 +449,11 @@ class LandmarksStep extends CalculationStep
     }
     return -1;
   }
-  
-  PVector Mh, Mt, Mw, Ot, Oo, Et, It, Ip;
-  
-  void calculateCorners()
-  {
-    Mw = PVector.add(armThumb, armOther).mult(0.5);
-    Mt = PVector.add(gapIM, gapThumb).mult(0.5);
-    Mh = PVector.add(gapRP, gapThumb).mult(0.5);
-    Oo = PVector.add(gapRP, PVector.sub(gapRP, gapMR));
-    Ot = PVector.add(gapIM, PVector.sub(gapIM, gapMR)); //temp
-    
-    Ip = intersectEnds(Mw, gapMR, armOther, Mt);
-    It = intersectDirections(Mh, PVector.sub(gapIM, gapMR), armOther, PVector.sub(armOther, Mt));
-    
-    Et = intersectEnds(Mh, It, gapThumb, Ot);
-  }
-  
-  PVector intersectEnds(PVector a, PVector aEnd, PVector b, PVector bEnd)
-  {
-    PVector da = PVector.sub(aEnd, a);
-    PVector db = PVector.sub(bEnd, b);
-    return intersectDirections(a, da, b, db);
-  }
-  
-  PVector intersectDirections(PVector a, PVector da, PVector b, PVector db)
-  {
-    float parallelRate = da.x * db.y - da.y * db.x;
-    println("Parallel: ", parallelRate);
-    println(da, db);
-    if (abs(parallelRate) < EPSILON) return new PVector(a.x, a.y);
-    if (abs(db.y) > EPSILON) {
-      float x = (b.x - a.x + db.x/db.y * (a.y - b.y)) / parallelRate * db.y;
-      return PVector.add(a, da.mult(x));
-    }
-    if (abs(db.x) > EPSILON) {
-      float x = -(b.y - a.y + db.y/db.x * (a.x - b.x)) / parallelRate * db.x;
-      return PVector.add(a, da.mult(x));
-    }
-    // Well if both are (almost) zero then there's nothing to intersect, duh.
-    return new PVector(a.x, a.y);
-  }
 
   public void drawImpl(PGraphics g)
   {
     g.image(image, 0, 0);
-    g.stroke(255, 0, 0);
-    g.strokeWeight(1);
-    g.noFill();
-    drawIndicator(g, armThumb);
-    drawIndicator(g, armOther);
-    drawIndicator(g, gapThumb);
-    drawIndicator(g, gapIM);
-    drawIndicator(g, gapMR);
-    drawIndicator(g, gapRP);
-    
-    g.stroke(0, 127, 255);
-    g.line(armOther.x, armOther.y, Mw.x, Mw.y);
-    g.line(Mw.x, Mw.y, Ip.x, Ip.y);
-    g.line(Ip.x, Ip.y, It.x, It.y);
-    g.line(It.x, It.y, Et.x, Et.y);
-    g.line(Et.x, Et.y, Ot.x, Ot.y);
-    g.line(Ot.x, Ot.y, gapMR.x, gapMR.y);
-    g.line(gapMR.x, gapMR.y, Oo.x, Oo.y);
-    g.line(Oo.x, Oo.y, armOther.x, armOther.y);
-    g.stroke(0, 0, 255);
-    drawIndicator(g, Ip, "Ip");
-    drawIndicator(g, Mt, "Mt");
-    drawIndicator(g, Mw, "Mw");
-  }
-
-  public void drawIndicator(PGraphics g, PVector p)
-  {
-    drawIndicator(g, p, null);
-  }
-  public void drawIndicator(PGraphics g, PVector p, String text)
-  {
-    if (p == null) return;
-    g.ellipse(p.x, p.y, 10, 10);
-    if (text != null) g.text(text, p.x+6, p.y+20);
+    lm.drawOn(g);
   }
 }
 

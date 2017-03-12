@@ -11,6 +11,7 @@ class HandProcessor
   public FileSelectorBar fileSelector;
   
   ShapeIndexStep shapeIndexStep;
+  LandmarksStep landmarksStep;
   SmoothNormalsStep smoothNormalsStep;
   FlowStep flowStep;
   DftStep dctStep;
@@ -31,7 +32,8 @@ class HandProcessor
     if (loadAlbedo) stepSelector.add(new AlbedoStep(currentTake));
     shapeIndexStep = new ShapeIndexStep(currentTake);
     stepSelector.add(shapeIndexStep);
-    stepSelector.add(new LandmarksStep(currentTake));
+    landmarksStep = new LandmarksStep(currentTake);
+    stepSelector.add(landmarksStep);
     if (loadNormals) {
       stepSelector.add(new NormalsStep(currentTake));
       smoothNormalsStep = new SmoothNormalsStep(shapeIndexStep);
@@ -199,8 +201,10 @@ class HandProcessor
     for (boolean haveInput = true; haveInput; haveInput = nextInput()) {
       println("Processing " + fileSelector.getFile().getPath());
       featureStep.calculate();
+      landmarksStep.calculate();
+      HandDescriptor descriptor = new HandDescriptor(featureStep.features, landmarksStep.lm);
       String path = featuresFolder + fileSelector.getUsableFileNamePath() + ".ser";
-      saveFeatures(path);
+      saveFeatures(/*descriptor, */path);
     }
   }
 }
